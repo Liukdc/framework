@@ -2,73 +2,401 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "状态转移图",
   "states": [
-    "IDLE", "LISTENING", "ANALYZING",
-    "IN_SESSION(p0)", "IN_SESSION(n1)", "IN_SESSION(n3)", "IN_SESSION(n4)", "IN_SESSION(n5)", "IN_SESSION(n6)", "IN_SESSION(n7)", "IN_SESSION(n8)", "IN_SESSION(n9)", "IN_SESSION(n10)", "IN_SESSION(n11)", "IN_SESSION(n12)", "IN_SESSION(n13)", "IN_SESSION(n14)", "IN_SESSION(n15)",
-    "WAITING_CONFIRM", "EXECUTING", "CLARIFYING", "CLOSING"
+    "IDLE",
+    "LISTENING",
+    "ANALYZING",
+    "IN_SESSION(p0)",
+    "IN_SESSION(n1)",
+    "IN_SESSION(n3)",
+    "IN_SESSION(n4)",
+    "IN_SESSION(n5)",
+    "IN_SESSION(n6)",
+    "IN_SESSION(n7)",
+    "IN_SESSION(n8)",
+    "IN_SESSION(n9)",
+    "IN_SESSION(n10)",
+    "IN_SESSION(n11)",
+    "IN_SESSION(n12)",
+    "IN_SESSION(n13)",
+    "IN_SESSION(n14)",
+    "IN_SESSION(n15)",
+    "WAITING_CONFIRM",
+    "EXECUTING",
+    "CLARIFYING",
+    "CLOSING"
   ],
   "inapplicablePathTypes": [
-    {"pathType": "chitchat_path", "reason": "N1 slackNodeDeclaration.enabled=false，无松弛节点"},
-    {"pathType": "soft_landing_path", "reason": "N1 softLandingTargets为空"},
-    {"pathType": "silent_input", "reason": "alignScenarioFlag=false"}
+    {
+      "pathType": "chitchat_path",
+      "reason": "N1 slackNodeDeclaration.enabled=false，无松弛节点"
+    },
+    {
+      "pathType": "soft_landing_path",
+      "reason": "N1 softLandingTargets为空"
+    },
+    {
+      "pathType": "silent_input",
+      "reason": "alignScenarioFlag=false"
+    }
   ],
   "transitions": [
-    {"fromState": "IDLE", "toState": "LISTENING", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "用户唤醒'小智'", "prerequisiteDependencies": []},
-    {"fromState": "LISTENING", "toState": "ANALYZING", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "收到用户输入", "prerequisiteDependencies": []},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(p0)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=p0", "prerequisiteDependencies": []},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n1)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n1", "prerequisiteDependencies": ["p0"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n3)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n3", "prerequisiteDependencies": ["n1"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n4)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n4", "prerequisiteDependencies": ["n3"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n5)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n5", "prerequisiteDependencies": ["n1","n3","n4"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n6)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n6", "prerequisiteDependencies": ["n5"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n7)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n7", "prerequisiteDependencies": ["n5","n6"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n8)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n8", "prerequisiteDependencies": ["n7"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n9)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n9", "prerequisiteDependencies": ["n7","n8"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n10)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n10", "prerequisiteDependencies": ["n9"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n11)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n11", "prerequisiteDependencies": ["n10"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n12)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n12", "prerequisiteDependencies": ["n11"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n13)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n13", "prerequisiteDependencies": ["n12"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n14)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n14", "prerequisiteDependencies": ["n13"]},
-    {"fromState": "ANALYZING", "toState": "IN_SESSION(n15)", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "intent=n15", "prerequisiteDependencies": ["n14"]},
-    {"fromState": "IN_SESSION", "toState": "WAITING_CONFIRM", "pathType": "confirm_path", "taskType": "field_based", "triggerCondition": "步骤完成，产出待确认", "prerequisiteDependencies": []},
-    {"fromState": "WAITING_CONFIRM", "toState": "EXECUTING", "pathType": "confirm_path", "taskType": "field_based", "triggerCondition": "用户确认'确认'", "prerequisiteDependencies": []},
-    {"fromState": "WAITING_CONFIRM", "toState": "LISTENING", "pathType": "confirm_path", "taskType": "field_based", "triggerCondition": "用户取消确认", "prerequisiteDependencies": []},
-    {"fromState": "EXECUTING", "toState": "LISTENING", "pathType": "optimal_path", "taskType": "field_based", "triggerCondition": "产出已落盘", "prerequisiteDependencies": []},
-    {"fromState": "IN_SESSION", "toState": "CLARIFYING", "pathType": "validation_failed_path", "taskType": "field_based", "triggerCondition": "turnType=validation_failed", "prerequisiteDependencies": [], "validationType": "value_domain"},
-    {"fromState": "CLARIFYING", "toState": "IN_SESSION", "pathType": "validation_failed_path", "taskType": "field_based", "triggerCondition": "用户修正输入", "prerequisiteDependencies": []},
-    {"fromState": "IN_SESSION", "toState": "ANALYZING", "pathType": "off_task_path", "taskType": "field_based", "triggerCondition": "turnType=off-task", "prerequisiteDependencies": []},
-    {"fromState": "IN_SESSION", "toState": "LISTENING", "pathType": "giveup_path", "taskType": "field_based", "triggerCondition": "turnType=giveup", "prerequisiteDependencies": []},
-    {"fromState": "ANALYZING", "toState": "LISTENING", "pathType": "exit_path", "taskType": "field_based", "triggerCondition": "用户说退出词", "prerequisiteDependencies": []},
-    {"fromState": "ANALYZING", "toState": "CLOSING", "pathType": "exit_path", "taskType": "field_based", "triggerCondition": "用户说退出词", "prerequisiteDependencies": []},
-    {"fromState": "CLOSING", "toState": "IDLE", "pathType": "exit_path", "taskType": "field_based", "triggerCondition": "normal exit", "prerequisiteDependencies": [], "exitType": "normal"},
-    {"fromState": "CLOSING", "toState": "LISTENING", "pathType": "exit_path", "taskType": "field_based", "triggerCondition": "fallback exit", "prerequisiteDependencies": [], "exitType": "fallback"},
-    {"fromState": "任意状态", "toState": "ANALYZING", "pathType": "exit_path", "taskType": "field_based", "triggerCondition": "逃生舱——用户说取消词", "prerequisiteDependencies": []}
+    {
+      "fromState": "IDLE",
+      "toState": "LISTENING",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "用户唤醒'小智'",
+      "prerequisiteDependencies": []
+    },
+    {
+      "fromState": "LISTENING",
+      "toState": "ANALYZING",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "收到用户输入",
+      "prerequisiteDependencies": []
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(p0)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=p0",
+      "prerequisiteDependencies": []
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n1)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n1",
+      "prerequisiteDependencies": [
+        "p0"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n3)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n3",
+      "prerequisiteDependencies": [
+        "n1"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n4)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n4",
+      "prerequisiteDependencies": [
+        "n3"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n5)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n5",
+      "prerequisiteDependencies": [
+        "n1",
+        "n3",
+        "n4"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n6)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n6",
+      "prerequisiteDependencies": [
+        "n5"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n7)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n7",
+      "prerequisiteDependencies": [
+        "n5",
+        "n6"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n8)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n8",
+      "prerequisiteDependencies": [
+        "n7"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n9)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n9",
+      "prerequisiteDependencies": [
+        "n7",
+        "n8"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n10)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n10",
+      "prerequisiteDependencies": [
+        "n9"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n11)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n11",
+      "prerequisiteDependencies": [
+        "n10"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n12)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n12",
+      "prerequisiteDependencies": [
+        "n11"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n13)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n13",
+      "prerequisiteDependencies": [
+        "n12"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n14)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n14",
+      "prerequisiteDependencies": [
+        "n13"
+      ]
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "IN_SESSION(n15)",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "intent=n15",
+      "prerequisiteDependencies": [
+        "n14"
+      ]
+    },
+    {
+      "fromState": "IN_SESSION",
+      "toState": "WAITING_CONFIRM",
+      "pathType": "confirm_path",
+      "taskType": "field_based",
+      "triggerCondition": "步骤完成，产出待确认",
+      "prerequisiteDependencies": []
+    },
+    {
+      "fromState": "WAITING_CONFIRM",
+      "toState": "EXECUTING",
+      "pathType": "confirm_path",
+      "taskType": "field_based",
+      "triggerCondition": "用户确认'确认'",
+      "prerequisiteDependencies": []
+    },
+    {
+      "fromState": "WAITING_CONFIRM",
+      "toState": "LISTENING",
+      "pathType": "confirm_path",
+      "taskType": "field_based",
+      "triggerCondition": "用户取消确认",
+      "prerequisiteDependencies": []
+    },
+    {
+      "fromState": "EXECUTING",
+      "toState": "LISTENING",
+      "pathType": "optimal_path",
+      "taskType": "field_based",
+      "triggerCondition": "产出已落盘",
+      "prerequisiteDependencies": []
+    },
+    {
+      "fromState": "IN_SESSION",
+      "toState": "CLARIFYING",
+      "pathType": "validation_failed_path",
+      "taskType": "field_based",
+      "triggerCondition": "turnType=validation_failed",
+      "prerequisiteDependencies": [],
+      "validationType": "value_domain"
+    },
+    {
+      "fromState": "CLARIFYING",
+      "toState": "IN_SESSION",
+      "pathType": "validation_failed_path",
+      "taskType": "field_based",
+      "triggerCondition": "用户修正输入",
+      "prerequisiteDependencies": []
+    },
+    {
+      "fromState": "IN_SESSION",
+      "toState": "ANALYZING",
+      "pathType": "off_task_path",
+      "taskType": "field_based",
+      "triggerCondition": "turnType=off-task",
+      "prerequisiteDependencies": []
+    },
+    {
+      "fromState": "IN_SESSION",
+      "toState": "LISTENING",
+      "pathType": "giveup_path",
+      "taskType": "field_based",
+      "triggerCondition": "turnType=giveup",
+      "prerequisiteDependencies": []
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "LISTENING",
+      "pathType": "exit_path",
+      "taskType": "field_based",
+      "triggerCondition": "用户说退出词",
+      "prerequisiteDependencies": []
+    },
+    {
+      "fromState": "ANALYZING",
+      "toState": "CLOSING",
+      "pathType": "exit_path",
+      "taskType": "field_based",
+      "triggerCondition": "用户说退出词",
+      "prerequisiteDependencies": []
+    },
+    {
+      "fromState": "CLOSING",
+      "toState": "IDLE",
+      "pathType": "exit_path",
+      "taskType": "field_based",
+      "triggerCondition": "normal exit",
+      "prerequisiteDependencies": [],
+      "exitType": "normal"
+    },
+    {
+      "fromState": "CLOSING",
+      "toState": "LISTENING",
+      "pathType": "exit_path",
+      "taskType": "field_based",
+      "triggerCondition": "fallback exit",
+      "prerequisiteDependencies": [],
+      "exitType": "fallback"
+    },
+    {
+      "fromState": "任意状态",
+      "toState": "ANALYZING",
+      "pathType": "exit_path",
+      "taskType": "field_based",
+      "triggerCondition": "逃生舱——用户说取消词",
+      "prerequisiteDependencies": []
+    }
   ],
   "routeTable": {
-    "ANALYZING": {"model": "fast-router", "outputLimit": "intent仅16个枚举值"},
-    "IN_SESSION": {"defaultModel": "通用推理", "specialModels": {"n13": "代码生成专用"}}
+    "ANALYZING": {
+      "model": "fast-router",
+      "outputLimit": "intent仅16个枚举值"
+    },
+    "IN_SESSION": {
+      "defaultModel": "通用推理",
+      "specialModels": {
+        "n13": "代码生成专用"
+      }
+    }
   },
   "degradationChainRouting": [
-    {"step": "L1结构校验", "description": "JSON.parse+Schema校验，失败→重试1次→熔断→硬编码回复"},
-    {"step": "DET值域复验", "description": "field_based值域校验，规则来源N9 @section validation"},
-    {"step": "confidence检查", "description": "冷启动软拦截/非冷启动硬拦截"},
-    {"step": "跨任务延伸检测", "description": "DET字段白名单，needSemanticExtensionCheck=false"},
-    {"step": "硬编码兜底", "description": "熔断后硬编码回复落盘"}
+    {
+      "step": "L1结构校验",
+      "description": "JSON.parse+Schema校验，失败→重试1次→熔断→硬编码回复"
+    },
+    {
+      "step": "DET值域复验",
+      "description": "field_based值域校验，规则来源N9 @section validation"
+    },
+    {
+      "step": "confidence检查",
+      "description": "冷启动软拦截/非冷启动硬拦截"
+    },
+    {
+      "step": "跨任务延伸检测",
+      "description": "DET字段白名单，needSemanticExtensionCheck=false"
+    },
+    {
+      "step": "硬编码兜底",
+      "description": "熔断后硬编码回复落盘"
+    }
   ],
   "prerequisiteDependencies": {
     "p0": [],
-    "n1": ["p0"],
-    "n3": ["n1"],
-    "n4": ["n3"],
-    "n5": ["n1","n3","n4"],
-    "n6": ["n5"],
-    "n7": ["n5","n6"],
-    "n8": ["n7"],
-    "n9": ["n7","n8"],
-    "n10": ["n9"],
-    "n11": ["n10"],
-    "n12": ["n11"],
-    "n13": ["n12"],
-    "n14": ["n13"],
-    "n15": ["n14"]
+    "n1": [
+      "p0"
+    ],
+    "n3": [
+      "n1"
+    ],
+    "n4": [
+      "n3"
+    ],
+    "n5": [
+      "n1",
+      "n3",
+      "n4"
+    ],
+    "n6": [
+      "n5"
+    ],
+    "n7": [
+      "n5",
+      "n6"
+    ],
+    "n8": [
+      "n7"
+    ],
+    "n9": [
+      "n7",
+      "n8"
+    ],
+    "n10": [
+      "n9"
+    ],
+    "n11": [
+      "n10"
+    ],
+    "n12": [
+      "n11"
+    ],
+    "n13": [
+      "n12"
+    ],
+    "n14": [
+      "n13"
+    ],
+    "n15": [
+      "n14"
+    ]
   }
 }

@@ -4,13 +4,30 @@
   "interfaces": {
     "buildPromptContext": {
       "description": "构建IN_SESSION注入包",
-      "params": ["currentIntent", "constitutionSections", "turnHistory", "domainRules", "pendingFields"],
-      "paramCount": 5,
+      "params": [
+        "currentIntent",
+        "constitutionSections",
+        "turnHistory",
+        "domainRules",
+        "pendingFields",
+        "stepSnapshots",
+        "currentStepName"
+      ],
+      "paramCount": 7,
       "excludesTopicEvolution": true
     },
     "updateGraph": {
       "description": "写入turnHistory+变更日志",
-      "params": ["userInput", "modelTurn", "turnType", "askingField", "changeLevel", "changeLevelReason", "validationResult", "taskType"],
+      "params": [
+        "userInput",
+        "modelTurn",
+        "turnType",
+        "askingField",
+        "changeLevel",
+        "changeLevelReason",
+        "validationResult",
+        "taskType"
+      ],
       "paramCount": 8,
       "includesChangeLevel": true
     },
@@ -36,7 +53,10 @@
       "ruleMiningQueue": []
     },
     "_pendingCollectedFields": {
-      "sourceOptions": ["off_task", "normal_pause"],
+      "sourceOptions": [
+        "off_task",
+        "normal_pause"
+      ],
       "ttl": "pending_fields_ttl"
     }
   }
