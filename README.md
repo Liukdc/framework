@@ -33,6 +33,17 @@ The result is a system where:
 | L3 (Output) | `framework/节点说明_v5.4.md` + P0/N1-N16 | What — each node's inputs, outputs, deliverables |
 | Application | `MetaAgent/` | Worked example: an agent that designs agents |
 
+### Implemented Products
+
+Two complete products built on State-Control, from L2 design documents through L3 constitutions to runnable code:
+
+| Product | Version | Description | Lines |
+|---------|---------|-------------|-------|
+| `fugui-xiaoan/` | v4.0 | Smart accounting assistant — NLU-intent routing → 7 session constitutions → runtime state machine with 5-stage degradation chain | 8,500+ |
+| `zacuiben/` | v2.1 | Sundries-book — lightweight text fragment manager with protector/scheduler/storage quad-set | 3,200+ |
+
+Both include: L2 flow documents, L3 constitutions, context-manager implementations, turnType schemas, tunable parameters, unit + integration tests, and Capacitor hybrid-app builds.
+
 ### Key Mechanisms
 
 - **TaskType Duality**: `field_based` (discrete field collection, DET-verifiable) vs `topic_based` (continuous semantic exploration, embedding-guarded)
@@ -121,6 +132,17 @@ This work is covered by a pending patent application for AI agent scheduling met
 - N13 骨架代码（10 个 .js 文件 + 21 条架构决策）
 - 全部可溯源，从 P0 认知加载到 N15 交付
 
+### 落地产品
+
+两个基于态控架构的完整产品，从 L2 设计文档→L3 宪法→可运行代码，全链路打通：
+
+| 产品 | 版本 | 说明 | 规模 |
+|------|------|------|------|
+| `fugui-xiaoan/` 富贵小安 | v4.0 | 智能记账助手 — NLU 意图路由→7 份 session 宪法→状态机 runtime，含五项降级链完整实现 | 8,500+ 行 |
+| `zacuiben/` 杂碎本 | v2.1 | 轻量文本片段管理器 — protector/scheduler/storage 四件套 | 3,200+ 行 |
+
+两者均包含：L2 流程文档、L3 宪法、context-manager 实现、turnType schema、tunable 参数、单元+集成测试、Capacitor 混合 App 产物。
+
 ### 目录结构
 
 ```
@@ -130,25 +152,23 @@ State-Control/
 │   ├── 态控架构-v4.7-全量版.md                     # L1 总纲
 │   ├── 态控闭环系统设计流程指南_v7.3.md              # L2 流程指南
 │   ├── 态控闭环系统人机设计流程_节点说明_v5.4.md       # L3 节点总说明
-│   ├── P0_节点说明_认知加载_v4.1.md
-│   ├── N1_节点说明_场景定义与边界清单_v6.3.md
-│   ├── N1_环节宪法_v8.6.md
-│   ├── N2_节点说明_v5.11.md  + 角色宪法 ×2
-│   ├── N3~N15 节点说明 + 环节宪法 ×24
+│   ├── 上下文管理器拼接机制_v1.1.md                  # context-manager 通用实现规范
+│   ├── P0/N1~N15 节点说明 + 环节宪法 ×30+
 │   └── ...
-├── MetaAgent/                                      # 落地案例
-│   ├── L2_流程文档_v2.0.md
-│   ├── 场景实践日志.md
-│   ├── 节点说明/ (P0~N15, v2.0)
-│   ├── 环节宪法/ (P0~N15)
-│   ├── l3-package/                                 # L3 可部署包
-│   │   ├── turnType-schema.json
-│   │   ├── boundary-list.json
-│   │   ├── interfaces.json
-│   │   ├── common-rules.json
-│   │   ├── constitutions/ (session + root)
-│   │   └── ...
-│   └── templates/ (field_based / topic_based)
+├── MetaAgent/                                      # 自举案例
+│   └── ...
+├── fugui-xiaoan/                                   # 产品一：富贵小安（记账助手）
+│   ├── docs/                                       # L2 流程文档 v4.0
+│   ├── l3-package/                                 # L3 宪法包（7 session + root）
+│   ├── packages/fugui-xiaoan/src/                  # runtime 源码（state-machine/context-manager/dialogue-engine…）
+│   ├── packages/fugui-xiaoan/test*.js              # 单元+集成测试
+│   ├── products/build/                             # Capacitor 混合 App 产物
+│   └── demos/demo/
+├── zacuiben/                                       # 产品二：杂碎本（文本片段管理器）
+│   ├── packages/zacuiben/src/                      # runtime 源码（dialogue-engine/scheduler/storage…）
+│   ├── packages/zacuiben/test*.js                  # 单元+集成测试
+│   ├── products/build/                             # Web 产物
+│   └── demos/demo/
 └── ...
 ```
 
@@ -168,5 +188,6 @@ State-Control/
 
 ---
 
-> 文档版本：v1.0
+> 文档版本：v2.0
 > 日期：2026-07-14
+> 更新：新增富贵小安 v4.0 + 杂碎本 v2.1
