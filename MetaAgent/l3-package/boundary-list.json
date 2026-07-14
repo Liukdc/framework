@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "边界清单",
+  "sceneName": "元智能体",
+  "doList": [
+    "设计对话式智能体（16步设计流程引导）",
+    "产出 L2 设计文档（节点说明+环节宪法）",
+    "产出 L3 生成包（结构化规则集）",
+    "支持 field_based 和 topic_based 两种任务类型",
+    "异步规则提炼——跨会话积累设计模式"
+  ],
+  "notDoList": [
+    "不生成最终业务代码（只到骨架代码）",
+    "不执行用户智能体的实际功能（只做设计引导）",
+    "不代替用户做关键设计决策",
+    "不在16步流程外执行任意对话"
+  ],
+  "guardrailStrategies": {
+    "field_based_skip_n2": "全部 intent 为 field_based 时跳过 N2（字段即边界，无需紧张度测试）",
+    "topic_based_require_n2": "任一 intent 为 topic_based 时执行 N2（边界紧张度测试）",
+    "out_of_scope": "不在16步内→引导回 N1",
+    "prerequisite_guard": "前置依赖守卫——DET 0 LLM，校验失败→引导至正确步骤"
+  },
+  "intents": [
+    {"id": "p0", "description": "认知加载——七根支柱自测", "taskType": "field_based"},
+    {"id": "n1", "description": "场景定义+边界清单", "taskType": "field_based"},
+    {"id": "n3", "description": "状态枚举+taskType固化", "taskType": "field_based"},
+    {"id": "n4", "description": "状态转移图+路由表", "taskType": "field_based"},
+    {"id": "n5", "description": "调度器核心逻辑", "taskType": "field_based"},
+    {"id": "n6", "description": "数据传递协议+守卫规则", "taskType": "field_based"},
+    {"id": "n7", "description": "根宪法编写", "taskType": "field_based"},
+    {"id": "n8", "description": "公共规则编写", "taskType": "field_based"},
+    {"id": "n9", "description": "各环节宪法编写", "taskType": "field_based"},
+    {"id": "n10", "description": "tunable槽位声明", "taskType": "field_based"},
+    {"id": "n11", "description": "契约对齐", "taskType": "field_based"},
+    {"id": "n12", "description": "L2→L3拆包", "taskType": "field_based"},
+    {"id": "n13", "description": "骨架代码生成", "taskType": "field_based"},
+    {"id": "n14", "description": "审骨架+跑case+查机制", "taskType": "field_based"},
+    {"id": "n15", "description": "调参+交付", "taskType": "field_based"}
+  ],
+  "metaInstructionWordlist": {
+    "wake": ["小智"],
+    "exit": ["小智拜拜", "小智退出"],
+    "cancel": ["小智取消这个节点"]
+  },
+  "slackNodeDeclaration": {"enabled": false},
+  "alignScenarioFlag": false,
+  "softLandingTargets": [],
+  "tunableDeclarations": {
+    "generalParameters": {
+      "applicable": [
+        {"name": "min_match_score", "defaultValue": 0.6},
+        {"name": "confidence_threshold", "defaultValue": 0.4},
+        {"name": "turnHistory_limit", "defaultValue": 20},
+        {"name": "boundary_coverage_threshold", "defaultValue": 0.9},
+        {"name": "contract_inheritance_limit", "defaultValue": 0.3},
+        {"name": "offTask_threshold", "defaultValue": 0.7},
+        {"name": "pending_fields_ttl", "defaultValue": "24h"},
+        {"name": "cold_start_observation_window", "defaultValue": 50},
+        {"name": "cold_start_emergency_threshold", "defaultValue": 0.5},
+        {"name": "pid_kp", "defaultValue": 0.1}
+      ]
+    },
+    "topicBasedParameters": {"applicable": []},
+    "fieldBasedParameters": {"applicable": []},
+    "ruleMiningParameters": {
+      "applicable": [
+        {"name": "domain_rule_validation_threshold", "defaultValue": 0.85},
+        {"name": "rule_mining_schedule", "defaultValue": "0 2 * * *"},
+        {"name": "rule_mining_batch_threshold", "defaultValue": 5},
+        {"name": "rule_mining_batch_size", "defaultValue": 16}
+      ]
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "公共规则",
+  "rules": [
+    {
+      "id": "rule1",
+      "name": "输出纯JSON",
+      "content": "所有LLM调用输出必须是纯JSON格式。根宪法第4条落地版。",
+      "executor": "N5第3层L1结构校验——JSON.parse+Schema，失败→重试1次→熔断→硬编码回复",
+      "irreducible": true
+    },
+    {
+      "id": "rule2",
+      "name": "坚持真实判断",
+      "content": "当用户认知与分析冲突时，不能为了回避矛盾而放弃真实判断。与根宪法第6条共享精神。",
+      "executor": "各环节宪法@section role约束模型行为，DET不介入",
+      "irreducible": true
+    },
+    {
+      "id": "rule3",
+      "name": "一次聚焦，禁止跨任务延伸",
+      "content": "不得在完成当前步骤后主动引入超出能力范围的延伸话题。根宪法第5条跨任务延伸检测和第3条收敛义务的落地版。",
+      "executor": "prompt层：环节宪法@section off-task-detection。DET层：N5第3层字段白名单检查",
+      "needSemanticExtensionCheck": false,
+      "irreducible": true
+    }
+  ]
+}

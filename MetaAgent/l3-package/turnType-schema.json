@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "turnType 统一 Schema",
+  "turnTypes": ["ask", "reply", "complete", "off-task", "giveup", "validation_failed"],
+  "commonFields": {
+    "turnType": {"type": "string", "enum": ["ask", "reply", "complete", "off-task", "giveup", "validation_failed"]},
+    "askingField": {"type": "string", "nullable": true},
+    "changeLevel": {"type": "string", "enum": ["major", "minor", "invalid"]},
+    "changeLevelReason": {"type": "string", "maxLength": 100},
+    "message": {"type": "string"}
+  },
+  "changeLevelDefaults": {
+    "formatError": "minor",
+    "changeLevelReasonDefault": "未提供",
+    "onEmptyOrOverlength": "DET拦截+默认'未提供'+记录警告，触发重试或进入CLARIFYING"
+  },
+  "changeLevelPurpose": "修改日志记录（非topicEvolution）",
+  "validationResult": {
+    "field": {"type": "string"},
+    "issue": {"type": "string"},
+    "userInput": {"type": "string", "nullable": true}
+  }
+}

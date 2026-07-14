@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "数据传递协议",
+  "protocolTable": [
+    {"id": 1, "fromState": "LISTENING", "toState": "ANALYZING", "carryData": "userInput", "clearData": "无"},
+    {"id": 2, "fromState": "ANALYZING", "toState": "IN_SESSION", "carryData": "intent+taskType=field_based+confidence", "clearData": "无"},
+    {"id": 3, "fromState": "IN_SESSION", "toState": "EXECUTING", "carryData": "result+validationResult+changeLevel+changeLevelReason", "clearData": "无"},
+    {"id": 4, "fromState": "IN_SESSION", "toState": "ANALYZING", "carryData": "offTaskInput+暂存collectedFields(source=off_task)", "clearData": "清空_activeSession"},
+    {"id": 5, "fromState": "IN_SESSION", "toState": "LISTENING", "carryData": "无", "clearData": "清空_activeSession"},
+    {"id": 6, "fromState": "EXECUTING", "toState": "LISTENING", "carryData": "_lastRecord+_lastRecordId", "clearData": "清空_activeSession"},
+    {"id": 7, "fromState": "ANALYZING", "toState": "LISTENING", "carryData": "无", "clearData": "无"},
+    {"id": 8, "fromState": "ANALYZING", "toState": "CLOSING", "carryData": "无", "clearData": "清空_activeSession"},
+    {"id": 9, "fromState": "WAITING_CONFIRM", "toState": "EXECUTING", "carryData": "decision=confirm", "clearData": "无"},
+    {"id": 10, "fromState": "WAITING_CONFIRM", "toState": "LISTENING", "carryData": "无", "clearData": "清空当前确认上下文"},
+    {"id": 11, "fromState": "CLOSING", "toState": "IDLE", "carryData": "无", "clearData": "清空_activeSession；保留_pendingCollectedFields(按ttl过期)"},
+    {"id": 12, "fromState": "CLOSING", "toState": "LISTENING", "carryData": "无", "clearData": "清空_activeSession+清空_pendingCollectedFields"},
+    {"id": 13, "fromState": "IN_SESSION", "toState": "CLARIFYING", "carryData": "validationResult+message", "clearData": "无"},
+    {"id": 14, "fromState": "CLARIFYING", "toState": "IN_SESSION", "carryData": "用户修正输入+validationResult", "clearData": "无"},
+    {"id": 15, "fromState": "任意状态", "toState": "ANALYZING", "carryData": "contractStore.analyzingContractIn", "clearData": "清空_activeSession"}
+  ],
+  "guardRules": {
+    "globalPriority": "最高:退出词 > 高:唤醒词(仅IDLE)/取消词 > 普通:DET关键词扫描",
+    "inSessionGuards": [
+      {"guardType": "越界检测辅助", "trigger": "每轮用户输入", "executor": "DET", "action": "关键词扫描，标记offTaskSuspicion"},
+      {"guardType": "L1结构校验", "trigger": "turnType=complete", "executor": "DET", "action": "JSON.parse+Schema校验"},
+      {"guardType": "DET值域复验", "trigger": "turnType=complete", "executor": "DET", "action": "值域校验——规则来源N9 @section validation"},
+      {"guardType": "confidence检查", "trigger": "turnType=complete", "executor": "DET", "action": "两步:数值<threshold + pattern扫硬撑式确认词表。冷启动软拦截/非冷启动硬拦截"},
+      {"guardType": "跨任务延伸检测", "trigger": "turnType=complete", "executor": "DET", "action": "字段白名单——16步内字段不触发越界"},
+      {"guardType": "硬编码兜底", "trigger": "熔断时", "executor": "DET", "action": "硬编码回复"},
+      {"guardType": "校验失败转发", "trigger": "turnType=validation_failed", "executor": "DET", "action": "进入CLARIFYING，复用模型message转发"},
+      {"guardType": "偏离暂存", "trigger": "turnType=off-task", "executor": "DET", "action": "暂存键值对到_pendingCollectedFields(source=off_task)"},
+      {"guardType": "放弃清理", "trigger": "turnType=giveup", "executor": "DET", "action": "清空activeSession"}
+    ]
+  },
+  "turnHistoryConstraints": {
+    "requiredFields": ["userInput", "modelTurn", "turnType", "askingField", "changeLevel", "changeLevelReason"],
+    "changeLevelRequired": true,
+    "changeLevelReasonRequired": true,
+    "changeLevelPurpose": "修改日志记录（非topicEvolution）",
+    "changeLevelReasonFallback": "空值/超100字→DET拦截+默认'未提供'+记录警告，触发重试或进入CLARIFYING"
+  },
+  "pendingCollectedFields": {
+    "off_task": {"meaning": "用户跑题导致中断", "behavior": "不主动询问；用户可显式恢复"},
+    "normal_pause": {"meaning": "用户主动暂停", "behavior": "主动询问是否继续"}
+  },
+  "contractStoreConfig": {
+    "engine": "SQLite",
+    "mode": "WAL",
+    "path": "<project_root>/.contractstore/<user_id>.db",
+    "tables": {
+      "domainRules": {
+        "fields": ["ruleId", "rule", "stepName", "edges", "conditions", "immutableLevel", "source", "level", "confirmedBy", "confirmedAt", "version", "status"],
+        "ddl": "CREATE TABLE IF NOT EXISTS domainRules (ruleId TEXT PRIMARY KEY, rule TEXT NOT NULL, stepName TEXT NOT NULL, edges TEXT NOT NULL, conditions TEXT, immutableLevel TEXT NOT NULL, source TEXT NOT NULL, level TEXT NOT NULL, confirmedBy TEXT, confirmedAt TEXT, version INTEGER NOT NULL, status TEXT NOT NULL)"
+      },
+      "ruleCandidates": {
+        "fields": ["candidateId", "rule", "evidenceCount", "passCount", "validationRate", "status"],
+        "ddl": "CREATE TABLE IF NOT EXISTS ruleCandidates (candidateId TEXT PRIMARY KEY, rule TEXT NOT NULL, evidenceCount INTEGER NOT NULL, passCount INTEGER NOT NULL, validationRate REAL NOT NULL, status TEXT NOT NULL)"
+      },
+      "ruleMiningQueue": {
+        "fields": ["queueId", "stepName", "changeLogRef", "status", "createdAt"],
+        "ddl": "CREATE TABLE IF NOT EXISTS ruleMiningQueue (queueId TEXT PRIMARY KEY, stepName TEXT NOT NULL, changeLogRef TEXT NOT NULL, status TEXT NOT NULL, createdAt TEXT NOT NULL)"
+      },
+      "sessionCheckpoints": {
+        "fields": ["userId", "lastCompletedStep", "completedSteps", "stepSnapshots", "resumedAt", "expiredAt", "ttl"],
+        "ddl": "CREATE TABLE IF NOT EXISTS sessionCheckpoints (userId TEXT PRIMARY KEY, lastCompletedStep TEXT NOT NULL, completedSteps TEXT NOT NULL, stepSnapshots TEXT NOT NULL, resumedAt TEXT, expiredAt TEXT, ttl INTEGER DEFAULT 604800)"
+      },
+      "roomConversationLog": {
+        "fields": ["id", "userId", "roomId", "sessionId", "turnIndex", "userInput", "modelResponse", "turnType", "askingField", "changeLevel", "timestamp"],
+        "ddl": "CREATE TABLE IF NOT EXISTS roomConversationLog (id INTEGER PRIMARY KEY AUTOINCREMENT, userId TEXT NOT NULL, roomId TEXT NOT NULL, sessionId TEXT NOT NULL, turnIndex INTEGER NOT NULL, userInput TEXT NOT NULL, modelResponse TEXT NOT NULL, turnType TEXT NOT NULL, askingField TEXT, changeLevel TEXT, timestamp TEXT NOT NULL); CREATE INDEX idx_room_user_roomId ON roomConversationLog(userId, roomId)"
+      }
+    }
+  },
+  "sessionCheckpointConfig": {
+    "description": "field_based 原生跨会话进度记忆——记录环节链进度和各 step 的快照",
+    "ttl": "session_checkpoint_ttl（默认 604800s = 7 天）",
+    "maxSteps": 16,
+    "resumeFlow": "ANALYZING 检测到未过期 checkpoint → resume_chat intent → 用户确认 → 注入 completedSteps+stepSnapshots → 路由到第一个未完成步骤"
+  },
+  "contractEvolutionConfig": {
+    "description": "contractEvolution = topicEvolution for field_based。stepName 精确匹配替代 topicId 语义匹配。",
+    "layeredRetention": {
+      "major": {"strategy": "permanent", "keepRecent": "all"},
+      "minor": {"strategy": "compressed", "keepRecent": 30, "compressTo": "1 summary entry"},
+      "invalid": {"strategy": "archive", "retentionDays": 90}
+    },
+    "threeLayerInjection": {
+      "layer0_domainRules": {"match": "stepName exact DET", "filter": "immutableLevel >= design", "limit": "contract_inheritance_limit × total"},
+      "layer1_ruleCandidates": {"filter": "validationRate >= domain_rule_validation_threshold", "format": "卡片（标题+证据数+通过率）"},
+      "layer2_changeHistory": {"majorEvents": "近3条", "compressedMinorSummary": "近30条压缩", "currentStateSnapshot": "所有已生效规则状态"}
+    },
+    "miningTriggers": {
+      "batchThreshold": "rule_mining_batch_threshold",
+      "schedule": "rule_mining_schedule",
+      "batchSize": "rule_mining_batch_size"
+    }
+  }
+}

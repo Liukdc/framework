@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "tunable 参数清单",
+  "generalParameters": [
+    {"name": "min_match_score", "defaultValue": 0.6, "valueRange": "0.0-1.0", "purpose": "意图匹配最低置信度", "consumer": "模型内部"},
+    {"name": "confidence_threshold", "defaultValue": 0.4, "valueRange": "0.0-1.0", "purpose": "DET confidence检查阈值", "consumer": "调度器"},
+    {"name": "turnHistory_limit", "defaultValue": 20, "valueRange": "5-100", "purpose": "turnHistory保留轮数", "consumer": "session-store"},
+    {"name": "boundary_coverage_threshold", "defaultValue": 0.9, "valueRange": "0.0-1.0", "purpose": "边界覆盖率阈值", "consumer": "调度器"},
+    {"name": "contract_inheritance_limit", "defaultValue": 0.3, "valueRange": "0.0-1.0", "purpose": "跨节点契约继承注入上限", "consumer": "调度器"},
+    {"name": "offTask_threshold", "defaultValue": 0.7, "valueRange": "0.0-1.0", "purpose": "偏离检测置信度阈值", "consumer": "模型内部"},
+    {"name": "pending_fields_ttl", "defaultValue": "24h", "valueRange": "1h-168h", "purpose": "半成品记录暂存时长", "consumer": "session-store"},
+    {"name": "cold_start_observation_window", "defaultValue": 50, "valueRange": "10-200", "purpose": "冷启动观测窗口会话数", "consumer": "冷启动监测器"},
+    {"name": "cold_start_emergency_threshold", "defaultValue": 0.5, "valueRange": "0.0-1.0", "purpose": "冷启动应急解冻触发阈值", "consumer": "冷启动监测器"},
+    {"name": "pid_kp", "defaultValue": 0.1, "valueRange": "0.01-1.0", "purpose": "PID反馈控制比例系数", "consumer": "自动调参引擎"}
+  ],
+  "ruleMiningParameters": [
+    {"name": "domain_rule_validation_threshold", "defaultValue": 0.85, "valueRange": "0.5-1.0", "purpose": "候选规则交叉验证通过阈值", "consumer": "规则提炼引擎"},
+    {"name": "rule_mining_schedule", "defaultValue": "0 2 * * *", "valueRange": "cron表达式", "purpose": "规则提炼定时任务cron", "consumer": "规则提炼引擎"},
+    {"name": "rule_mining_batch_threshold", "defaultValue": 5, "valueRange": "1-50", "purpose": "触发提炼的最小变更日志条数", "consumer": "规则提炼引擎"},
+    {"name": "rule_mining_batch_size", "defaultValue": 16, "valueRange": "1-100", "purpose": "单次提炼处理的最大日志条数", "consumer": "规则提炼引擎"}
+  ],
+  "inapplicableParameters": [
+    {"name": "amount_limit_max", "category": "field_based专用", "reason": "元智能体不涉及金额字段"},
+    {"name": "topic_anchor_similarity_threshold", "category": "topic_based", "reason": "全部field_based"},
+    {"name": "topic_keyword_overlap_threshold", "category": "topic_based", "reason": "全部field_based"},
+    {"name": "topic_evolution_match_threshold", "category": "topic_based", "reason": "全部field_based"},
+    {"name": "topic_evolution_minor_compaction_threshold", "category": "topic_based", "reason": "无topicEvolution"},
+    {"name": "topic_evolution_minor_compaction_batch", "category": "topic_based", "reason": "无topicEvolution"},
+    {"name": "topic_evolution_major_retention_days", "category": "topic_based", "reason": "无topicEvolution"},
+    {"name": "topic_evolution_invalid_retention_days", "category": "topic_based", "reason": "无topicEvolution"}
+  ],
+  "coldStartConfig": {
+    "coldStartEnabled": true,
+    "observationWindow": "cold_start_observation_window",
+    "emergencyThreshold": "cold_start_emergency_threshold",
+    "pidKp": "pid_kp",
+    "frozenParameters": ["cold_start_observation_window", "cold_start_emergency_threshold", "pid_kp"]
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "context-manager 接口契约",
+  "interfaces": {
+    "buildPromptContext": {
+      "description": "构建IN_SESSION注入包",
+      "params": ["currentIntent", "constitutionSections", "turnHistory", "domainRules", "pendingFields"],
+      "paramCount": 5,
+      "excludesTopicEvolution": true
+    },
+    "updateGraph": {
+      "description": "写入turnHistory+变更日志",
+      "params": ["userInput", "modelTurn", "turnType", "askingField", "changeLevel", "changeLevelReason", "validationResult", "taskType"],
+      "paramCount": 8,
+      "includesChangeLevel": true
+    },
+    "archiveGraph": {
+      "description": "会话结束后归档",
+      "params": [],
+      "paramCount": 0
+    }
+  },
+  "schedulerState": {
+    "_activeSession": {
+      "intent": "当前步骤intent名",
+      "taskType": "field_based",
+      "turnHistory": {
+        "description": "含changeLevel/changeLevelReason的会话轮次列表",
+        "changeLevelRequired": true,
+        "changeLevelReasonRequired": true
+      }
+    },
+    "_contractStore": {
+      "domainRules": [],
+      "ruleCandidates": [],
+      "ruleMiningQueue": []
+    },
+    "_pendingCollectedFields": {
+      "sourceOptions": ["off_task", "normal_pause"],
+      "ttl": "pending_fields_ttl"
+    }
+  }
+}

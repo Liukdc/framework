@@ -1,0 +1,172 @@
+# 态控架构 (State-Control Architecture)
+
+> **Not making AI smarter — making AI compute only what it should.**  
+> 不是让 AI 更聪明，是让 AI 在精确限定的条件下，只算该算的东西。
+
+[English](#english) | [中文](#chinese)
+
+---
+
+<a id="english"></a>
+## English Abstract
+
+### What is State-Control?
+
+State-Control (态控, Tàikòng) is a **deterministic context-management methodology** for LLM-based agent systems. It shifts the "what-to-inject-into-context" decision from the LLM's internal reasoning to an external, auditable state machine — reducing token waste, preventing hallucination from context pollution, and providing a complete audit trail.
+
+### Core Innovation
+
+Most agent frameworks (LangGraph, CrewAI, Coze, Dify) focus on making LLMs *smarter* through better prompts, tool orchestration, or multi-agent coordination. State-Control inverts the problem: **don't optimize what goes in — eliminate what shouldn't.**
+
+The result is a system where:
+- Every piece of context injected into the LLM has a documented reason
+- Cross-session memory decays by "information net value," not by recency
+- Hallucination from boundary violation is intercepted before reaching the user
+- The entire design (from requirements to L3 deployable package) is traceable
+
+### Architecture Layers
+
+| Layer | Name | Purpose |
+|-------|------|---------|
+| L1 (Ground) | `framework/态控架构-v4.7-全量版.md` | Why — mechanisms, principles, constraints |
+| L2 (Design) | `framework/态控闭环系统设计流程指南_v7.3.md` | How — methodology, checklists, step-by-step |
+| L3 (Output) | `framework/节点说明_v5.4.md` + P0/N1-N16 | What — each node's inputs, outputs, deliverables |
+| Application | `MetaAgent/` | Worked example: an agent that designs agents |
+
+### Key Mechanisms
+
+- **TaskType Duality**: `field_based` (discrete field collection, DET-verifiable) vs `topic_based` (continuous semantic exploration, embedding-guarded)
+- **Room Metaphor**: Each "node" is a room — the LLM only sees what's inside its current room
+- **TopicEvolution**: Cross-session memory with layered retention (major events preserved, minor events compacted, invalid events archived)
+- **4-Layer Constitution**: Root (immutable) → Public Rules → Step Charters → Runtime Context
+- **@importance Three-Tier**: critical / high / normal / low — allocates token budget by information value
+- **5-Stage Degradation Chain**: L1 structural check → DET value-domain check → confidence check → cross-task extension check → hard-coded fallback
+- **cross_param Validation**: 5 inter-parameter semantic dependency rules that catch misconfiguration before deployment
+
+### MetaAgent: The Self-Referential Case Study
+
+The `MetaAgent/` directory contains a complete application of State-Control to build an agent that *guides users through designing agents using State-Control*. This self-referential case study demonstrates:
+
+- 16 field_based intents, N2 skipped (pure field-collection scenario)
+- 15 step constitutions with @importance tagging
+- L3 deployable package (26 files including session constitutions, turnType schema, boundary list)
+- Full traceability from P0 (cognitive loading) through N15 (delivery)
+
+### Patent
+
+This work is covered by a pending patent application for AI agent scheduling methods. All materials in this repository are open for academic and research use.
+
+### Citation
+
+```bibtex
+@misc{liu2026-state-control,
+  title   = {State-Control Architecture: Deterministic Context Management for LLM Agent Systems},
+  author  = {Jinsong Liu},
+  year    = {2026},
+  url     = {https://github.com/Liukdc/state-control}
+}
+```
+
+---
+
+<a id="chinese"></a>
+## 中文正文
+
+### 态控是什么
+
+态控（态控架构，State-Control Architecture）是一套**确定性的 LLM agent 上下文管理方法论**。核心思想：把"喂给 LLM 什么上下文"这件事，从 LLM 内部的黑箱推理变成外部可审计的确定性状态机。每一条注入上下文的记忆、规则、历史，都有可追溯的理由。
+
+### 态控解决了什么问题
+
+现有 agent 框架（LangGraph、CrewAI、Coze、Dify 等）的核心思路是"让 LLM 更聪明"——更好的 prompt + 更强的工具编排 + 多 agent 协作。但 LLM 本身有固有问题：
+
+- **上下文窗口膨胀**：记忆无限堆叠，token 浪费在先，遗忘在后
+- **串台**：跨场景信息混入当前上下文，LLM 在错误的规则下推理
+- **边界模糊**：语义上没有确定的"该不该接这个活"的判决边界
+- **不可审计**：为什么喂这段上下文？为什么拒绝那个请求？全在 LLM 内部
+
+态控的做法不同：**不是优化该喂什么，而是明确不该喂什么。**
+
+### 三层文档体系
+
+| 层 | 文档 | 定位 | 字数 |
+|----|------|------|------|
+| L1 总纲 | `态控架构-v4.7-全量版.md` | 机制原理、约束规范 | ~20K |
+| L2 流程 | `态控闭环系统设计流程指南_v7.3.md` | 设计方法论、检查清单 | ~30K |
+| L3 工序 | `态控闭环系统人机设计流程_节点说明_v5.4.md` + P0/N1-N16 | 每步的输入输出、交付物、校验 | ~80K |
+| 案例 | `MetaAgent/` | 完整落地案例：用态控设计一个"帮人用态控设计 agent"的助手 | — |
+
+### 核心机制一览
+
+| 机制 | 英文 | 一句话 |
+|------|------|--------|
+| taskType 二分法 | TaskType Duality | field_based（离散字段，DET 可验）vs topic_based（连续语义，embedding 守卫） |
+| 房间比喻 | Room Metaphor | 每个节点是独立房间，LLM 只看当前房间内的上下文，不串台 |
+| topicEvolution 分层留存 | TopicEvolution | 跨会话记忆按"信息净价值"衰减——major 永久保留，minor 超阈值压缩，invalid 归档 |
+| 四层宪法 | Constitution Layers | 根宪法（不可变）→ 公共规则 → 环节宪法 → 运行时，逐层约束 |
+| @importance 三层 | @importance | critical / high / normal / low — 有限的 token 预算按信息价值分配 |
+| 五项降级链 | Degradation Chain | L1 结构 → DET 值域 → confidence → 跨任务延伸 → 硬编码兜底 |
+| cross_param | cross_param | 5 条跨参数语义依赖规则，防止参数配置冲突 |
+| 契约传递 | Contract Inheritance | 节点间字段级信息传递，防止上下文膨胀 |
+
+### MetaAgent：自举案例
+
+`MetaAgent/` 是态控的完整落地案例。它回答了一个自指问题：**"能不能用态控方法论造一个引导用户使用态控方法论的智能体？"**
+
+结果是可以。整个设计流程（P0→N1→N3→...→N15）全部走完，产出：
+- 16 个 field_based intent，N2 跳过（纯字段场景，字段即边界）
+- 15 份环节宪法，每份含 @importance 优先级标注
+- L3 可部署包（26 个文件）
+- N10 tunable 参数清单（18 通用 + 1 field_based 专用）
+- N13 骨架代码（10 个 .js 文件 + 21 条架构决策）
+- 全部可溯源，从 P0 认知加载到 N15 交付
+
+### 目录结构
+
+```
+State-Control/
+├── README.md
+├── framework/                                      # 态控架构本体
+│   ├── 态控架构-v4.7-全量版.md                     # L1 总纲
+│   ├── 态控闭环系统设计流程指南_v7.3.md              # L2 流程指南
+│   ├── 态控闭环系统人机设计流程_节点说明_v5.4.md       # L3 节点总说明
+│   ├── P0_节点说明_认知加载_v4.1.md
+│   ├── N1_节点说明_场景定义与边界清单_v6.3.md
+│   ├── N1_环节宪法_v8.6.md
+│   ├── N2_节点说明_v5.11.md  + 角色宪法 ×2
+│   ├── N3~N15 节点说明 + 环节宪法 ×24
+│   └── ...
+├── MetaAgent/                                      # 落地案例
+│   ├── L2_流程文档_v2.0.md
+│   ├── 场景实践日志.md
+│   ├── 节点说明/ (P0~N15, v2.0)
+│   ├── 环节宪法/ (P0~N15)
+│   ├── l3-package/                                 # L3 可部署包
+│   │   ├── turnType-schema.json
+│   │   ├── boundary-list.json
+│   │   ├── interfaces.json
+│   │   ├── common-rules.json
+│   │   ├── constitutions/ (session + root)
+│   │   └── ...
+│   └── templates/ (field_based / topic_based)
+└── ...
+```
+
+### 专利声明
+
+本研究受已提交的 AI Agent 调度方法专利申请保护。本仓库中的全部材料开放用于学术研究和参考。
+
+### 引用
+
+```
+刘劲松. 态控架构：面向 LLM Agent 系统的确定性上下文管理方法论. 2026.
+```
+
+### 作者
+
+听风者（Jinsong Liu）— 深圳 · 产品经理 / 全栈开发者 / 专利发明人
+
+---
+
+> 文档版本：v1.0
+> 日期：2026-07-14
