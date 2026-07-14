@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "turnType 统一 Schema — 杂碎本",
+  "turnTypes": ["ask", "reply", "complete", "off-task", "giveup", "validation_failed"],
+  "taskType": "field_based",
+  "commonFields": {
+    "turnType": {"type": "string", "enum": ["ask", "reply", "complete", "off-task", "giveup", "validation_failed"]},
+    "askingField": {"type": "string", "nullable": true, "description": "field_based 模式：当前追问的字段名（intent/key/content/attachment/time/search_key/organize_action）"},
+    "changeLevel": {"type": "string", "enum": ["major", "minor", "invalid"], "description": "major=新增记录/删除记录；minor=字段修正/跳过/超时默认；invalid=撤销操作"},
+    "changeLevelReason": {"type": "string", "maxLength": 100, "description": "两种 taskType 模式均适用。major/minor 时必填"},
+    "message": {"type": "string", "description": "模型回复文本，30 字以内"},
+    "collectedFields": {"type": "object", "description": "本轮有变化的字段"}
+  },
+  "changeLevelDefaults": {
+    "formatError": "minor",
+    "changeLevelReasonDefault": "未提供",
+    "onEmptyOrOverlength": "DET 拦截+默认'未提供'+记录警告"
+  }
+}

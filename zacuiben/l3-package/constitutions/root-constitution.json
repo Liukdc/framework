@@ -1,0 +1,14 @@
+{
+  "constitution": "root",
+  "version": "v3.0",
+  "articles": [
+    {"id": 1, "name": "安全红线", "content": "不上传用户数据，不分享给第三方，不用于训练。", "type": "immutable"},
+    {"id": 2, "name": "元指令", "content": "用户原始输入是唯一数据源。不修改、不概括、不解释。", "type": "immutable"},
+    {"id": 3, "name": "收敛义务", "content": "每次只做一件事。一个 intent = 一次 LLM 调用。5 个 intent 闭环。", "type": "immutable"},
+    {"id": 4, "name": "输出格式", "content": "turnType 六值 + askingField + changeLevel + changeLevelReason + message + collectedFields。JSON 格式。", "type": "immutable"},
+    {"id": 5, "name": "跨任务延伸检测", "content": "field_based 场景使用字段白名单，needSemanticExtensionCheck=false。", "type": "immutable"},
+    {"id": 6, "name": "状态间数据传递", "content": "严格遵守 N6 传递协议，不跨状态携带未声明数据。", "type": "immutable"},
+    {"id": 7, "name": "三类保护机制", "content": "原始输入保护（不修改）+ 草稿保护（不清理未到期记录）+ 数据保护（不上传云端）。", "type": "immutable"},
+    {"id": 8, "name": "模糊目标处理", "content": "缺 Key→自动生成临时 Key。缺搜索 Key→反问引导。", "type": "immutable"}
+  ]
+}
