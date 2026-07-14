@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "turnType-schema",
+  "description": "Unified turnType format. Applicable to both field_based and topic_based taskTypes.",
+  "type": "object",
+  "required": ["turnType"],
+  "properties": {
+    "turnType": {
+      "type": "string",
+      "enum": ["ask", "reply", "complete", "off-task", "giveup", "validation_failed"],
+      "description": "ask=prompting user, reply=responding, complete=done, off-task=deviated, giveup=abandoned, validation_failed=value check failed"
+    },
+    "askingField": {
+      "type": ["string", "null"],
+      "description": "field_based: current field name (category/amount/time/quantity). validation_failed: failed field name. null otherwise."
+    },
+    "changeLevel": {
+      "type": "string",
+      "enum": ["major", "minor", "invalid"],
+      "description": "Change level for this turn. Applicable to both taskTypes. Invalid format defaults to minor."
+    },
+    "changeLevelReason": {
+      "type": "string",
+      "maxLength": 100,
+      "description": "Reason for change level. Required for major/minor (1-100 chars), optional for invalid. Empty/over-length -> DET format check intercept, default 'not provided' with warning."
+    },
+    "message": { "type": "string", "description": "Natural language response to user, max 30 chars." },
+    "validationResult": {
+      "type": ["object", "null"],
+      "properties": {
+        "field": { "type": "string" },
+        "issue": { "type": "string" },
+        "userInput": { "type": "string" }
+      }
+    },
+    "collectedFields": { "type": "object", "description": "Collected fields that changed this turn." },
+    "offTaskInput": { "type": ["string", "null"], "description": "User's original input when off-task." },
+    "result": { "type": ["object", "null"], "description": "Complete structured result. Only when turnType='complete'." }
+  }
+}

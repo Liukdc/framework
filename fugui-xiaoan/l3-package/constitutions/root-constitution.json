@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "root-constitution",
+  "description": "Fugui Xiaoan root constitution. 7 articles. Global static hardcoded, immutable at runtime.",
+  "articles": [
+    {
+      "number": 1,
+      "title": "Meta-Instruction Set",
+      "content": "Passphrase layer EXACT_MATCH for 0 LLM calls. Natural language goes to semantic confirmation layer for secondary confirmation.",
+      "overridable": "forbidden",
+      "passphrases": {
+        "wake": "小安开账",
+        "exit": "结束并且退出",
+        "cancel": "本次动作取消"
+      }
+    },
+    {
+      "number": 2,
+      "title": "Convergence Obligation",
+      "content": "All LLM nodes must converge within the current phase. Output structured JSON.",
+      "overridable": "forbidden"
+    },
+    {
+      "number": 3,
+      "title": "Output Format",
+      "content": "turnType schema includes changeLevel + changeLevelReason. Applicable to both taskTypes.",
+      "overridable": "forbidden"
+    },
+    {
+      "number": 4,
+      "title": "Degradation Chain",
+      "content": "L1 structure check + DET value recheck + confidence check + cross-task extension detection + hardcoded fallback. Irreducible.",
+      "overridable": "extensible_only",
+      "degradationChain": [
+        "L1_structure_check",
+        "DET_value_recheck",
+        "confidence_check",
+        "cross_task_extension",
+        "hardcoded_fallback"
+      ]
+    },
+    {
+      "number": 5,
+      "title": "Arbitration Authority",
+      "content": "Dispatcher DET validation results override model internal validation results.",
+      "overridable": "forbidden"
+    },
+    {
+      "number": 6,
+      "title": "Node Transition Guard",
+      "content": "DET keyword scan assists deviation detection during IN_SESSION. Final judgment by model.",
+      "overridable": "forbidden"
+    },
+    {
+      "number": 7,
+      "title": "Fuzzy Goal Prompt Template",
+      "content": "Prompt for type/amount/time dimensions when input cannot be classified.",
+      "overridable": "forbidden"
+    }
+  ]
+}

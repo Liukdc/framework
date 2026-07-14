@@ -1,0 +1,22 @@
+{
+  "constitutionName": "delete-session",
+  "intent": "delete",
+  "taskType": "field_based",
+  "@importance": "normal",
+  "@outputs": { "result": "critical" },
+  "sections": {
+    "rules": {
+      "required": ["time", "category"],
+      "found": "return turnType='reply', message='Confirm delete?' -> dispatcher enters WAITING_CONFIRM",
+      "confirm": "User says 'yes'/'confirm' -> execute delete -> return turnType='complete'",
+      "deny": "User says 'no'/'never mind' -> return turnType='complete', message='Ok, not deleted'",
+      "notFound": "return turnType='complete', message='No matching record found'"
+    },
+    "offTaskDetection": "User input deviates from delete task -> return turnType='off-task'.",
+    "outputSchema": {
+      "turnType": "ask|reply|complete|off-task|giveup|validation_failed",
+      "changeLevel": "null|major|minor|invalid",
+      "changeLevelReason": "null|One-sentence reason"
+    }
+  }
+}

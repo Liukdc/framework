@@ -1,0 +1,27 @@
+{
+  "name": "fugui-xiaoan",
+  "version": "0.1.0",
+  "description": "富贵小安 — 基于自然语言的反分类极简记账核心库",
+  "main": "src/index.js",
+  "type": "module",
+  "files": [
+    "src/",
+    "README.md"
+  ],
+  "keywords": [
+    "expense-tracker",
+    "nlp",
+    "anti-classification",
+    "accounting",
+    "pwa"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@exomind/dialogue-core": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Liukdc/ai-interaction-infrastructure",
+    "directory": "packages/fugui-xiaoan"
+  }
+}

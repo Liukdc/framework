@@ -1,0 +1,134 @@
+<!-- SPDX-License-Identifier: MIT | Copyright (c) 2026 刘劲松 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#E8A840">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="富贵小安">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%23E8A840'/><text x='50' y='68' text-anchor='middle' font-size='56' fill='white' font-family='sans-serif'>安</text></svg>">
+<title>富贵小安</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- cloud badge -->
+<div id="cloudBadge" class="cloud-badge" style="display:none"></div>
+
+<header>
+  <h1 id="headerTitle"><span style="color:#E8A840">小安</span> · 简单</h1>
+  <span class="mode-switch" onclick="toggleMode()" title="切换模式">⇄</span>
+</header>
+
+<!-- Chat bubbles -->
+<div class="page active" id="page-chat">
+  <div class="chat-list" id="chatList">
+    <div class="chat-bubble system">小安出来了。说『小安出来记一下』叫醒我。</div>
+  </div>
+</div>
+
+<!-- Stats page -->
+<div class="page" id="page-stats">
+  <div class="stat-card"><h3>本月概览</h3><div class="stat-row"><div class="stat-item"><div class="num" id="statCount">0</div><div class="label">笔数</div></div><div class="stat-item"><div class="num" id="statTotal">0</div><div class="label">合计(元)</div></div></div></div>
+  <div class="stat-card"><h3>近7天</h3><div class="bar-chart" id="weekChart"></div></div>
+  <div class="stat-card"><h3>分类占比</h3><div class="cat-list" id="catBreakdown"></div></div>
+</div>
+
+<!-- Settings page -->
+<div class="page" id="page-settings">
+  <div class="setting-item"><div><span class="label">记账模式</span><div class="hint" id="modeHint">简单模式：种类·金额·时间</div></div><button class="btn-sm" onclick="toggleMode()">切换</button></div>
+  <div class="setting-item"><div><span class="label">云同步 (CloudBase)</span><div class="hint">填入环境 ID 自动同步</div></div><button class="btn-sm" onclick="showCloudSettings()">设置</button></div>
+  <div id="cloudPanel" class="api-panel">
+    <input type="text" id="tcbEnvId" placeholder="环境 ID">
+    <button class="btn-sm" onclick="saveCloudConfig()">保存刷新</button>
+  </div>
+  <div class="setting-item"><div><span class="label">AI 解析 (DeepSeek)</span><div class="hint">填入 Key 启用语义理解</div></div><button class="btn-sm" onclick="showApiKeyPanel()">设置</button></div>
+  <div id="apiKeyPanel" class="api-panel">
+    <input type="password" id="apiKeyInput" placeholder="sk-...">
+    <button class="btn-sm" onclick="saveApiKey()">保存</button>
+  </div>
+  <div class="setting-item"><span class="label">导出 CSV</span><button class="btn-sm" onclick="exportCSV()">导出</button></div>
+  <div class="setting-item"><span class="label">导出 JSON</span><button class="btn-sm" onclick="exportJSON()">导出</button></div>
+  <div class="setting-item"><span class="label">清空全部</span><button class="btn-sm danger" onclick="clearAll()">清空</button></div>
+  <div class="setting-item"><span class="label">使用帮助</span><button class="btn-sm" onclick="toggleHelp()">查看</button></div>
+  <div class="setting-item"><span class="label">关于</span><span class="hint">富贵小安 v2.0 · PWA</span></div>
+</div>
+
+<!-- Input bar -->
+<div class="input-bar">
+  <input type="text" id="chatInput" placeholder="说『小安出来记一下』叫醒我" onkeydown="handleKey(event)">
+  <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="语音">🎤</button>
+  <button class="send-btn" onclick="sendMessage()">发送</button>
+</div>
+
+<nav id="tabBar">
+  <button class="tab active" data-page="chat" onclick="switchTab('chat')">💬 对话</button>
+  <button class="tab" data-page="stats" onclick="switchTab('stats')">📊 统计</button>
+  <button class="tab" data-page="settings" onclick="switchTab('settings')">⚙️ 设置</button>
+</nav>
+
+<div id="toast"></div>
+
+<!-- Onboarding -->
+<div id="onboarding" class="overlay">
+  <div class="overlay-card">
+    <h2>🎉 欢迎使用富贵小安</h2>
+    <div class="onboard-steps">
+      <div class="step"><span class="num">1</span> 说「小安出来记一下」叫醒我</div>
+      <div class="step"><span class="num">2</span> 说「午饭25块」开始记账</div>
+      <div class="step"><span class="num">3</span> 缺信息时我会追问你</div>
+      <div class="step"><span class="num">4</span> 记完会问「还有其他需要记的吗」</div>
+      <div class="step"><span class="num">💡</span> 设置里可以开启 AI 模式</div>
+    </div>
+    <button class="record-btn" onclick="dismissOnboarding()">开始用</button>
+  </div>
+</div>
+
+<!-- Help -->
+<div id="helpPopup" class="overlay" style="display:none">
+  <div class="overlay-card">
+    <h2>📖 怎么用</h2>
+    <div class="onboard-steps">
+      <div class="step"><strong>唤醒</strong>：说「小安出来记一下」</div>
+      <div class="step"><strong>记账</strong>：「午饭25块」→ 缺啥问啥 → 记完循环</div>
+      <div class="step"><strong>查询</strong>：「查下这个月餐饮花了多少」</div>
+      <div class="step"><strong>删除</strong>：「删掉昨天那笔午饭」</div>
+      <div class="step"><strong>退出</strong>：说「算了」「没有了」随时出来</div>
+      <div class="step"><strong>模式</strong>：点标题右边 ⇄ 切换简单/细致</div>
+    </div>
+    <button class="record-btn" onclick="toggleHelp()">知道了</button>
+  </div>
+</div>
+
+<!-- Capacitor 原生桥接：必须在 app.js 之前加载 -->
+<script type="module">
+import { initNativeBridge, NativeBridge } from './js/lib/native-bridge.js';
+window.NativeBridge = NativeBridge;
+// 导出 Promise 供 app.js 等待
+window.__bridgeReady = initNativeBridge().then(caps => {
+  window.__nativeCapabilities = caps;
+  if (caps.native) console.log('[富贵小安] 原生模式已激活', caps);
+});
+</script>
+<script type="module" src="js/app.js"></script>
+<script>
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => {}) }
+
+// Tab switching — inline so it works before module loads
+(function() {
+  window.switchTab = function(name) {
+    document.querySelectorAll('#tabBar .tab').forEach(function(t) { t.classList.remove('active'); });
+    var tabBtn = document.querySelector('#tabBar .tab[data-page="' + name + '"]');
+    if (tabBtn) tabBtn.classList.add('active');
+    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    var page = document.getElementById('page-' + name);
+    if (page) page.classList.add('active');
+    if (name === 'stats' && window.refreshStats) window.refreshStats();
+  };
+})();
+</script>
+</body>
+</html>

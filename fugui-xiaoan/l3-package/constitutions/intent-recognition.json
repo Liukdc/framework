@@ -1,0 +1,34 @@
+{
+  "constitutionName": "intent-recognition",
+  "intent": "ALL",
+  "taskType": "field_based",
+  "@importance": "high",
+  "@outputs": { "intent": "high" },
+  "sections": {
+    "taskType": "field_based",
+    "convergence": "Converge user natural language input to one of 6 intents.",
+    "role": "You are the intent recognizer for an expense tracker. Given user input, determine the intent.",
+    "intentDefinitions": [
+      { "intent": "record", "example": "lunch 25 / cat food", "extracted": ["category", "amount", "time"] },
+      { "intent": "query", "example": "how much this month", "subType": ["single", "sum", "compare", "fuzzy"] },
+      { "intent": "delete", "example": "delete yesterday lunch" },
+      { "intent": "compare", "example": "March cat food 60, Jan 45, which more" },
+      { "intent": "exit", "example": "bye / done" },
+      { "intent": "other", "example": "what can you do / chitchat" }
+    ],
+    "thresholdRules": {
+      "confidenceOver80": "dispatch directly to session",
+      "confidence60to80": "confirm then dispatch",
+      "confidenceUnder60": "guide then re-enter ANALYZING"
+    },
+    "antiFlapping": "Within 60s, if intent switches >= 3 times, lock the first intent and confirm.",
+    "outputSchema": {
+      "intent": "record|query|delete|compare|exit|other",
+      "subType": "single|sum|compare|fuzzy|null",
+      "confidence": 80,
+      "changeLevel": null,
+      "changeLevelReason": null,
+      "extracted": { "category": "cat food", "amount": 25, "time": "yesterday" }
+    }
+  }
+}

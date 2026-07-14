@@ -1,0 +1,31 @@
+{
+  "constitutionName": "query-session",
+  "intent": "query",
+  "taskType": "field_based",
+  "@importance": "normal",
+  "@outputs": { "result": "critical" },
+  "sections": {
+    "subTypes": {
+      "single": {
+        "required": ["time", "category"],
+        "output": "FOUND: YYYY-MM-DD [category] [amount] yuan"
+      },
+      "sum": {
+        "required": ["timeRange", "category"],
+        "output": "[timeRange] [category] X records, total Y yuan"
+      },
+      "compare": {
+        "required": ["category", "timeRange1", "timeRange2"]
+      },
+      "fuzzy": {
+        "rule": "Direct semantic match. No further prompting. Return 3-5 results."
+      }
+    },
+    "offTaskDetection": "User input deviates from query task -> return turnType='off-task'.",
+    "outputSchema": {
+      "turnType": "ask|reply|complete|off-task|giveup|validation_failed",
+      "changeLevel": "null|major|minor|invalid",
+      "changeLevelReason": "null|One-sentence reason"
+    }
+  }
+}

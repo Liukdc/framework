@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>杂碎本 · Demo</title>
+<!-- SPDX-License-Identifier: MIT | Copyright (c) 2026 刘劲松 -->
+<style>
+:root{--bg:#0D1117;--bg2:#161B22;--bg3:#1C2128;--tx:#E6EDF3;--tx2:#8B949E;--tx3:#484F58;--brand:#D9704A;--brand2:#B04E2E;--ok:#3FB950;--warn:#D29922;--err:#F85149;--border:#30363D;--r:12px}
+html{font-size:48px;font-family:Inter,'Noto Sans SC',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+#top{display:flex;align-items:center;padding:.25rem .4rem;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;gap:.2rem}
+#top .title{color:var(--brand);font-weight:600;font-size:.5rem;margin-right:auto}
+#top .stat{font-size:.4rem;color:var(--tx2)}
+#top button{padding:.08rem .2rem;border-radius:4px;font-size:.38rem;border:1px solid var(--border);background:var(--bg3);color:var(--tx2);cursor:pointer}
+#top button:hover{color:var(--brand);border-color:var(--brand)}
+#top button.pri{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+#msgs{flex:1;overflow-y:auto;padding:.3rem}
+.bubble{max-width:85%;padding:.15rem .25rem;border-radius:.15rem;font-size:.5rem;line-height:1.5;margin-bottom:.15rem;position:relative}
+.bubble.user{align-self:flex-end;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;margin-left:auto;border-bottom-right-radius:4px}
+.bubble.system{align-self:flex-start;background:var(--bg3);border:1px solid var(--border)}
+.bubble.clarify{align-self:flex-start;background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.25);color:var(--warn);font-size:.45rem}
+.bubble .time{font-size:.32rem;color:var(--tx3);margin-top:.05rem}
+.clarify-btns{display:flex;gap:.1rem;margin-bottom:.15rem}
+.clarify-btns button{padding:.1rem .25rem;border-radius:4px;font-size:.4rem;border:1px solid var(--warn);background:transparent;color:var(--warn);cursor:pointer}
+
+#inputArea{display:flex;gap:.1rem;padding:.15rem .3rem;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+#inputArea input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--tx);padding:.12rem .2rem;font-size:.45rem;outline:none}
+#inputArea input:focus{border-color:var(--brand)}
+#inputArea button{padding:.1rem .25rem;border-radius:6px;font-size:.4rem;border:1px solid var(--border);background:var(--bg3);color:var(--tx2);cursor:pointer}
+
+.presets{display:flex;gap:.1rem;padding:.1rem .3rem;flex-wrap:wrap}
+.presets button{padding:.06rem .18rem;border-radius:4px;font-size:.38rem;border:1px solid var(--border);background:var(--bg2);color:var(--tx3);cursor:pointer}
+.presets button:hover{border-color:var(--brand);color:var(--brand)}
+</style>
+</head>
+<body>
+<div id="top">
+  <span class="title">杂碎本</span>
+  <span class="stat" id="statPending">0 条待整理</span>
+  <button onclick="startCleanup()" class="pri">清理</button>
+  <button onclick="showRecycle()">回收区</button>
+</div>
+<div id="msgs">
+  <div class="bubble system">想到什么就记什么。试试"小喵——地铁上看到一件蓝色外套"或"地铁上看到一件蓝色外套"？</div>
+</div>
+<div class="presets">
+  <button onclick="quick('小喵——地铁上看到一件蓝色外套')">带Key</button>
+  <button onclick="quick('周末想去城西爬山')">无Key</button>
+  <button onclick="quick('书店的分类法值得研究')">再记一条</button>
+  <button onclick="searchFragment('小喵')">找小喵</button>
+  <button onclick="startCleanup()">开始整理</button>
+</div>
+<div id="inputArea">
+  <input id="input" placeholder="说"杂碎本，记一下"召唤 / 直接说内容 / 问"哪里"" maxlength="5000" onkeydown="if(event.key==='Enter')handleSend()">
+  <button id="sendBtn" onclick="handleSend()" disabled>发送</button>
+</div>
+
+<script type="module">
+import { Zacuiben, createMemoryStorage } from '../../packages/zacuiben/src/index.js';
+
+// ═══════════════════════════════════════
+// 杂碎本——完整流程引擎 v3（接入核心包）
+// ═══════════════════════════════════════
+
+var STORAGE_KEY='zcb_full',records=[],_state='idle',_cleanupSession=null,_nf=null,_ts=0;
+
+// ── 核心包实例 ──
+const storage = createMemoryStorage();
+const zc = new Zacuiben({ storage });
+
+// ── 适配层：核心包字段 → Demo UI 字段 ──
+function toDemo(r) {
+  var status = r.status;
+  if (status === 'pending') status = 'unprocessed';
+  else if (status === 'kept') status = 'processed';
+  else if (status === 'abandoned') status = 'discarded';
+
+  var cleanupTime;
+  if (r.organizeTime && r.organizeTime !== 'never') {
+    cleanupTime = new Date(r.organizeTime).getTime();
+  } else if (r.organizeTime === 'never') {
+    cleanupTime = -1;
+  } else {
+    cleanupTime = Date.now() + 7*86400000;
+  }
+
+  return {
+    id: r.id,
+    key: r.name || '',
+    content: r.content || '',
+    createdAt: typeof r.createdAt === 'string' ? new Date(r.createdAt).getTime() : (r.createdAt || Date.now()),
+    isTemp: r.isTemporary || false,
+    status: status,
+    cleanupTime: cleanupTime,
+    skipCount: r.skipCount || 0,
+    discardedAt: null
+  };
+}
+
+// ── 名词词表（保持，validateKey 本地需要）──
+var NOUNS=new Set('事东西书文章想法计划方案路线笔记记录经验方法技巧创意灵感音乐电影歌菜餐厅店商场超市医院学校公司客户朋友同事项目任务活活动会议报告文档资料数据表格图片照片视频音频文件地址电话邮箱密码账号链接网站工具软件代码程序接口API服务作品设计画表情包'.split(''));
+function isNoun(w){return NOUNS.has(w)||(w.length>=2&&/^[\u4e00-\u9fff]+$/.test(w))}
+
+// ── 存储（localStorage fallback）──
+function load(){try{records=JSON.parse(localStorage.getItem(STORAGE_KEY))||[];}catch(e){records=[]}}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(records))}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function ftm(ts){var d=new Date(ts);return d.toLocaleDateString('zh-CN',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}
+function fdt(ts){return new Date(ts).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'})}
+function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+
+// ── 解析 Key｜Content（保留，用于 UI 端轻量验证）──
+function parseInput(text){
+  var t=text.trim(),k='',c=t;
+  var m=t.match(/^(.+?)[—\-－—]+(.+)$/);
+  if(m){k=m[1].trim();c=m[2].trim()}
+  else{m=t.match(/^(.+?)[：:]\s*(.+)$/);if(m){k=m[1].trim();c=m[2].trim()}}
+  return{key:k,content:c};
+}
+function validateKey(key){
+  if(!key||key.length<1)return false;
+  var hn=false,av=true;
+  for(var i=0;i<key.length;i++){var c=key.charCodeAt(i);
+    if(c>=0x4e00&&c<=0x9fff){if(isNoun(key[i]))hn=true}
+    else if(!/[a-zA-Z0-9\s\-_]/.test(key[i]))av=false}
+  return hn&&av;
+}
+
+// ── UI ──
+function bubble(html,role){
+  var d=document.createElement('div');d.className='bubble '+(role||'system');
+  d.innerHTML=html+'<div class="time">'+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+'</div>';
+  document.getElementById('msgs').appendChild(d);d.scrollIntoView({behavior:'smooth'});
+}
+
+// ── 统计（双源：核心包 getStats + localStorage mirror）──
+function stats(){
+  // 异步获取核心包精确统计
+  zc.getStats().then(function(s){
+    document.getElementById('statPending').textContent=s.pendingFragments+' 条待整理';
+    document.getElementById('statPending').style.color=s.pendingFragments>0?'var(--brand)':'var(--tx2)';
+  }).catch(function(){});
+  // 立即从 mirror 显示
+  var p=records.filter(function(r){return r.status==='unprocessed'}).length;
+  document.getElementById('statPending').textContent=p+' 条待整理';
+  document.getElementById('statPending').style.color=p>0?'var(--brand)':'var(--tx2)';
+}
+
+// ── 添加碎片（接入核心包 record）──
+async function addFragment(text){
+  var inp=document.getElementById('input'),sb=document.getElementById('sendBtn');
+  if(!text.trim())return;inp.value='';sb.disabled=true;
+  bubble(text,'user');
+
+  // 核心包 record() 内部已处理召唤指令/Key解析/临时标记
+  var result;
+  try { result = zc.record(text); }
+  catch(e) { bubble('录入失败：'+esc(e.message),'clarify'); return; }
+
+  // 等持久化完成
+  if (result._savePromise) await result._savePromise;
+
+  // 从核心存储检索完整记录（获取 id/createdAt 等）
+  var all = await storage.all();
+  var rec = all.find(function(r){
+    return r.name === result.name && r.content === result.content;
+  });
+  if (!rec) { bubble('记录保存异常，请重试。','system'); return; }
+
+  // 字段映射 + 同步到 localStorage mirror
+  var demoRec = toDemo(rec);
+  _ts++;
+  records.push(demoRec); save();
+
+  bubble('<span style="color:var(--brand)">已记：'+esc(demoRec.key)+'</span>','system');
+  // 轻量询问整理时间（直接更新核心存储 + mirror）
+  askCleanupTime(demoRec);
+  stats();
+}
+
+function askCleanupTime(rec){
+  bubble('这一条什么时候整理？（可以说"明天晚上"/"三天后"/"下周一"或点按钮）','clarify');
+  _state='settingTime';_pendingFor=rec.id;
+  var bs=document.createElement('div');bs.className='clarify-btns';
+  [{l:'明天',a:'tomorrow'},{l:'默认（7天）',a:'default'},{l:'永不',a:'never'},{l:'以后再说',a:'defer'}].forEach(function(o){
+    var b=document.createElement('button');b.textContent=o.l;b.onclick=function(){setCleanupTime(rec.id,o.a);bs.remove();stats()};bs.appendChild(b);
+  });
+  document.getElementById('msgs').appendChild(bs);
+}
+
+// 完整时间解析："明天晚上"/"三天后"/"下周一" / "7月10日"
+function parseCleanupTime(text){
+  var t=text.trim();
+  if(/默认|随便|按系统/.test(t))return'default';
+  if(/永不|不整[理了]|不用|永久/.test(t))return'never';
+  // 明天晚上
+  if(/明天\s*(晚上|早上|上午|下午)/.test(t)){
+    var d=new Date(Date.now()+86400000);d.setHours(0,0,0,0);
+    if(/晚上/.test(t))d.setHours(20);else if(/早上/.test(t))d.setHours(8);else if(/下午/.test(t))d.setHours(14);else d.setHours(9);
+    return d.getTime();
+  }
+  // N天后
+  var nm=t.match(/([一二三四五六七八九十\d]+)\s*天\s*后/);
+  if(nm){var n=parseInt(nm[1])||{一:1,二:2,三:3,四:4,五:5,六:6,七:7}[nm[1]]||3;var d=new Date(Date.now()+n*86400000);d.setHours(9,0,0,0);return d.getTime()}
+  // 下周X
+  var wm=t.match(/下\s*周\s*([一二三四五六日天])/);
+  if(wm){var wmap={一:1,二:2,三:3,四:4,五:5,六:6,日:0,天:0};var w=wmap[wm[1]];var d=new Date();d.setDate(d.getDate()+(7-d.getDay()+w));d.setHours(9,0,0,0);return d.getTime()}
+  // N月N日
+  var dm=t.match(/(\d{1,2})\s*月\s*(\d{1,2})\s*[日号]/);
+  if(dm){var d=new Date();d.setMonth(parseInt(dm[1])-1);d.setDate(parseInt(dm[2]));d.setHours(9,0,0,0);if(d<Date.now())d.setFullYear(d.getFullYear()+1);return d.getTime()}
+  return null;
+}
+var _pendingFor=null;
+
+// ── 设定整理时间（同步更新核心存储 + localStorage mirror）──
+async function setCleanupTime(id,opt){
+  var now=Date.now(),newTimeIso,newTimeMirror;
+  if(opt==='tomorrow'){var d=new Date(now);d.setDate(d.getDate()+1);d.setHours(9,0,0,0);newTimeIso=d.toISOString();newTimeMirror=d.getTime()}
+  else if(opt==='default'){newTimeIso=new Date(now+7*86400000).toISOString();newTimeMirror=now+7*86400000}
+  else if(opt==='never'){newTimeIso='never';newTimeMirror=-1}
+  else if(typeof opt==='number'){newTimeIso=new Date(opt).toISOString();newTimeMirror=opt}
+  else{newTimeIso=new Date(now+7*86400000).toISOString();newTimeMirror=now+7*86400000}
+
+  // 更新核心存储
+  await storage.update(id,{organizeTime:newTimeIso});
+
+  // 更新 mirror
+  var rec=records.find(function(r){return r.id===id});
+  if(rec){rec.cleanupTime=newTimeMirror;save()}
+
+  _state='idle';_pendingFor=null;
+}
+
+// ── 检索（接入核心包 search）──
+async function searchFragment(text){
+  bubble(text,'user');
+  var kw=text.replace(/[吗呢]？?$|[哪那]里|什么|怎么|如何|多少|啥|干嘛|\?|？|找/g,'').trim();
+  var results=await zc.search(kw);
+  var m=results.map(toDemo);
+  if(!m.length){bubble('没找到"'+esc(kw)+'"，你记过这个名字吗？','system');return}
+  if(m.length===1){var r=m[0];bubble('找到一条：'+fdt(r.createdAt)+'「'+esc(r.key)+'」——'+esc(r.content),'system')}
+  else{bubble('有几条"'+esc(kw)+'"，是哪个？','system');m.forEach(function(r){bubble('· '+fdt(r.createdAt)+'「'+esc(r.key)+'」'+esc(r.content.substring(0,30)),'system')})}
+  // 删除按钮
+  if(m.length<=5){var dbs=document.createElement('div');dbs.className='clarify-btns';
+    m.forEach(function(r){
+      var db=document.createElement('button');db.textContent='删「'+esc(r.key.substring(0,8))+'」';db.style.cssText='font-size:.35rem;border-color:var(--err);color:var(--err)';
+      db.onclick=async function(){await zc.abandonFragment(r.id);
+        var lr=records.find(function(x){return x.id===r.id});if(lr){lr.status='discarded';lr.discardedAt=Date.now();save()}
+        bubble('已废弃「'+esc(r.key)+'」，移入回收区。','system');dbs.remove();stats()};dbs.appendChild(db);
+    });
+    document.getElementById('msgs').appendChild(dbs);
+  }
+}
+
+// ── 清理（接入核心包 startCleanup + CleanupSession）──
+async function startCleanup(){
+  if(_state==='cleaning'){bubble('已经在清理中。','system');return}
+  var session;
+  try{session=await zc.startCleanup()}catch(e){bubble('清理启动失败：'+esc(e.message),'system');return}
+  var cur=session.current();
+  if(!cur){bubble('没有需要整理的碎片。','system');return}
+  _cleanupSession=session;_state='cleaning';
+  bubble('之前记了一些还没整理的，现在过一遍吗？','system');
+  nextCard();
+}
+
+function nextCard(){
+  if(_cleanupTimeout){clearTimeout(_cleanupTimeout);_cleanupTimeout=null}
+  var cur=_cleanupSession.current();
+  if(!cur){bubble('整完了。','system');_state='idle';stats();return}
+  var rec=toDemo(cur.record);
+  var prog=_cleanupSession.getProgress();
+  var k=prog.current+1,N=prog.total;
+  if(rec.isTemp){
+    bubble('未整理（第'+k+'/'+N+'）。'+esc(rec.key)+'——'+esc(rec.content)+'，'+fdt(rec.createdAt)+'。这条还没有正式名字，要起一个吗？','clarify');
+    _btnRow([{l:'起名',a:'name'},{l:'跳过',a:'skip'},{l:'废弃',a:'discard'},{l:'退出',a:'exit'}],rec.id);
+    _nf=rec.id;
+  }else{
+    bubble('未整理（第'+k+'/'+N+'）。'+esc(rec.key)+'——'+esc(rec.content)+'，'+fdt(rec.createdAt)+'。好了？','clarify');
+    _btnRow([{l:'好了',a:'done'},{l:'跳过',a:'skip'},{l:'废弃',a:'discard'},{l:'退出',a:'exit'}],rec.id);
+    _nf=null;
+  }
+  _cleanupTimeout=setTimeout(function(){bubble('超时未回应，已跳过。','system');cleanDecide(rec.id,'skip')},5000);
+}
+
+function _btnRow(opts,id){
+  var bs=document.createElement('div');bs.className='clarify-btns';
+  opts.forEach(function(o){
+    var b=document.createElement('button');b.textContent=o.l;b.onclick=function(){cleanDecide(id,o.a);bs.remove()};bs.appendChild(b);
+  });
+  document.getElementById('msgs').appendChild(bs);
+}
+
+var _deciding=false;
+async function cleanDecide(id,action){
+  if(_deciding)return;_deciding=true;
+  try{
+    if(_cleanupTimeout){clearTimeout(_cleanupTimeout);_cleanupTimeout=null}
+    if(action==='name'){bubble('请说新名字：','system');_state='naming';return}
+    if(action==='exit'){bubble('不整了。','system');_state='idle';stats();return}
+
+    // 映射 demo action → CleanupSession action
+    if(action==='done'){
+      await _cleanupSession.decide('keep');
+      // 同步 mirror
+      var rec=records.find(function(r){return r.id===id});if(rec){rec.status='processed';rec.skipCount=0;save()}
+    }else if(action==='discard'){
+      // 使用 zc.abandonFragment 设置 abandoned 状态，再用 session.skip() 推进
+      await zc.abandonFragment(id);
+      _cleanupSession.skip();
+      var rec=records.find(function(r){return r.id===id});if(rec){rec.status='discarded';rec.discardedAt=Date.now();save()}
+    }else if(action==='skip'){
+      var result=await _cleanupSession.decide('skip');
+      // 同步 mirror（skipCount 递增 + 如果核心包判定 becameAbandoned）
+      var rec=records.find(function(r){return r.id===id});
+      if(rec){rec.skipCount=(rec.skipCount||0)+1;
+        if(result.record&&result.record.status==='abandoned'){rec.status='discarded';rec.discardedAt=Date.now()}
+        save();
+      }
+    }
+    nextCard();stats();
+  }finally{_deciding=false}
+}
+
+// ── 起名（接入核心包 nameFragment）──
+async function handleNaming(text){
+  if(!validateKey(text)){bubble('这个名字不行，至少得有个名词。','system');return}
+  if(!_cleanupSession){bubble('清理会话异常。','system');return}
+  // 使用 session.nameTemp 更新存储（name+isTemporary+status→kept）
+  var result=await _cleanupSession.nameTemp(_nf,text);
+  if(!result.success){bubble('起名失败：'+esc(result.error),'system');return}
+  // 推进会话（nameTemp 不自动推进）
+  _cleanupSession.skip();
+  // 同步 mirror
+  var rec=records.find(function(r){return r.id===_nf});if(rec){rec.key=text;rec.isTemp=false;rec.status='processed';rec.skipCount=0;save()}
+  _nf=null;_state='cleaning';nextCard();stats();
+}
+
+// ── 回收区（接入核心包 recoverFromBin）──
+function showRecycle(){
+  var dd=records.filter(function(r){return r.status==='discarded'});
+  if(!dd.length){bubble('回收区是空的。','system');return}
+  bubble('回收区（'+dd.length+'条，30天后永久删除）：','system');
+  var bs=document.createElement('div');bs.className='clarify-btns';
+  dd.forEach(function(r){
+    var row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:.1rem;margin-bottom:.05rem;font-size:.4rem';
+    row.innerHTML='<span style="flex:1;color:var(--tx2)">· '+fdt(r.createdAt)+'「'+esc(r.key)+'」 '+esc(r.content.substring(0,30))+'</span>';
+    var rb=document.createElement('button');rb.textContent='恢复';rb.style.cssText='padding:.04rem .12rem;border-radius:4px;font-size:.35rem;border:1px solid var(--ok);background:transparent;color:var(--ok);cursor:pointer;flex-shrink:0';
+    rb.onclick=async function(){
+      var res=await zc.recoverFromBin(r.id);
+      if(!res.success){bubble('恢复失败：'+esc(res.error),'system');return}
+      // 同步 mirror
+      var lr=records.find(function(x){return x.id===r.id});if(lr){lr.status='unprocessed';lr.discardedAt=null;lr.cleanupTime=Date.now()+7*86400000;save()}
+      bubble('已恢复「'+esc(r.key)+'」。','system');row.remove();stats()
+    };
+    row.appendChild(rb);bs.appendChild(row);
+  });
+  var b2=document.createElement('button');b2.textContent='清空回收区';b2.style.cssText='padding:.1rem .25rem;border-radius:4px;font-size:.4rem;border:1px solid var(--err);background:transparent;color:var(--err);cursor:pointer;margin-top:.1rem';
+  b2.onclick=function(){if(confirm('确认清空回收区？')){records=records.filter(function(r){return r.status!=='discarded'});save();bubble('已清空回收区。','system');bs.remove();stats()}};
+  bs.appendChild(b2);
+  document.getElementById('msgs').appendChild(bs);
+}
+
+// ── 定时清理（接入核心包 checkAutoCleanup）──
+async function autoClean(){
+  var result=await zc.checkAutoCleanup();
+  // 同步 mirror：清除已在核心存储中被移入回收区的记录
+  if(result.movedToRecycleBin>0||result.permanentlyRemoved>0){
+    // 从 mirror 中移除那些在核心存储中已不存在的记录
+    var allCore=await storage.all();
+    var coreIds=new Set(allCore.map(function(r){return r.id}));
+    records=records.filter(function(r){return coreIds.has(r.id)});
+    save();stats();
+  }
+  // mirror 中 30 天过期的废弃记录
+  var now=Date.now();
+  records=records.filter(function(r){
+    if(r.status==='discarded'&&r.discardedAt&&now-r.discardedAt>30*86400000)return false;
+    return true;
+  });
+  save();
+}
+
+// ── 自动整理提醒 + 全局定时 ──
+var _cleanupTimeout=null,_globalRemindTimer=null,_lastGlobalRemind=0;
+function checkCleanupReminders(){
+  if(_state!=='idle')return;
+  var now=Date.now(),recs=records.filter(function(r){return r.status==='unprocessed'&&r.cleanupTime>0&&r.cleanupTime<=now});
+  if(recs.length>0){
+    // 记录级提醒
+    var r=recs[0];
+    bubble('有一条记录「'+esc(r.key)+'」到了整理时间，现在看看吗？','clarify');
+    var bs=document.createElement('div');bs.className='clarify-btns';
+    [{l:'看看',a:'ok'},{l:'不了',a:'no'}].forEach(function(o){
+      var b=document.createElement('button');b.textContent=o.l;b.onclick=function(){bs.remove();if(o.a==='ok')startCleanup();else{r.cleanupTime=now+7*86400000;save()}};bs.appendChild(b);
+    });
+    document.getElementById('msgs').appendChild(bs);
+  }
+  // 全局提醒（每周一次）
+  if(!_lastGlobalRemind||now-_lastGlobalRemind>7*86400000){
+    _lastGlobalRemind=now;
+    var pen=records.filter(function(r){return r.status==='unprocessed'});
+    if(pen.length>3){bubble('你还有'+pen.length+'条碎片没有整理，什么时候过一遍？','system')}
+  }
+  stats();
+}
+
+// ── 快捷 ──
+function quick(t){document.getElementById('input').value=t;document.getElementById('sendBtn').disabled=false;handleSend()}
+
+// ── 发送入口（移除召唤指令检测——zc.record() 内部已处理）──
+async function handleSend(){
+  var t=document.getElementById('input').value.trim();document.getElementById('input').value='';document.getElementById('sendBtn').disabled=true;
+  
+  // 空内容
+  if(!t){bubble('没有内容，不记了。','system');return}
+
+  // 在起名状态
+  if(_state==='naming'&&_nf){await handleNaming(t);return}
+
+  // 在设定整理时间状态
+  if(_state==='settingTime'&&_pendingFor){var pt=parseCleanupTime(t);if(pt==='default'||pt==='never'||typeof pt==='number'){await setCleanupTime(_pendingFor,pt);stats()}else{await setCleanupTime(_pendingFor,'default');bubble('没太明白，按默认7天设定了。','system');stats()}return}
+
+  // 内容超长
+  if(t.length>5000){bubble('内容太长了，杂碎本记不了这么多，请精简到5000字以内。','system');return}
+
+  // 检索还是记录（zc.record() 内部处理召唤/Key解析）
+  if(/[吗呢]？?$|[哪那]里|什么|怎么|如何|多少|啥|干嘛|\?|？|找/.test(t)){await searchFragment(t)}else{await addFragment(t)}
+}
+
+// ── 暴露到全局作用域（module 内函数不可被 onclick 直接引用）──
+window.handleSend = handleSend;
+window.startCleanup = startCleanup;
+window.showRecycle = showRecycle;
+window.searchFragment = searchFragment;
+window.quick = quick;
+
+// ── 启动 ──
+load();
+// 异步初始化：尝试从 localStorage mirror 迁移到核心存储
+(async function init(){
+  // 如果 mirror 有数据但核心存储为空，则将 mirror 数据导入核心存储
+  var allCore = await storage.all();
+  if(allCore.length === 0 && records.length > 0) {
+    for(var i=0;i<records.length;i++){
+      var r=records[i];
+      await storage.save({
+        name: r.key,
+        content: r.content,
+        isTemporary: r.isTemp,
+        status: r.status==='unprocessed'?'pending':r.status==='processed'?'kept':r.status==='discarded'?'abandoned':r.status,
+        skipCount: r.skipCount||0,
+        organizeTime: r.cleanupTime===-1?'never':new Date(r.cleanupTime||Date.now()+7*86400000).toISOString(),
+        createdAt: new Date(r.createdAt).toISOString()
+      });
+    }
+  }
+  await autoClean();stats();
+})();
+
+document.getElementById('input').addEventListener('input',function(){document.getElementById('sendBtn').disabled=!this.value.trim()});
+setInterval(function(){autoClean();},3600000);
+setInterval(checkCleanupReminders,30000); // 每30秒检查一次到期的提醒
+</script>
+</body>
+</html>

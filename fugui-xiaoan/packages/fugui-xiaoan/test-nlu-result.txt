@@ -1,0 +1,26 @@
+# 基础解析
+# 超时
+# 重试
+# JSON 兜底
+# validCategory
+ok 8 - exact match
+ok 9 - null → 其他
+ok 10 - undefined → 其他
+ok 11 - fuzzy: contains
+ok 12 - fuzzy: reverse contains
+ok 13 - no match → 其他
+# API Key
+ok 14 - set/get key
+ok 15 - clear key
+ok 16 - no key returns null
+[NLU] API error: 429
+ok 16 - no API key → null
+ok 16 - 429 no retry → null
+ok 16 - normal parse
+ok 16 - broken JSON → null
+ok 16 - 5xx retry then success
+ok 16 - 5xx both fail → null
+[NLU] Parse error: Cannot read properties of undefined (reading 'ok')
+ok 16 - timeout after 100ms
+
+# 16/16 passed, 0 failed

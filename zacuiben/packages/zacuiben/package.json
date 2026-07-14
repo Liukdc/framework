@@ -1,0 +1,26 @@
+{
+  "name": "zacuiben",
+  "version": "0.1.0",
+  "description": "杂粹本 — 反分类碎片清理工具 · 纯逻辑核心库",
+  "type": "module",
+  "main": "src/index.js",
+  "keywords": [
+    "反分类",
+    "碎片清理",
+    "信息管理"
+  ],
+  "author": "刘劲松",
+  "license": "MIT",
+  "repository": "github:Liukdc/ai-interaction-infrastructure",
+  "exports": {
+    ".": "./src/index.js",
+    "./types": "./src/types.js",
+    "./storage": "./src/storage.js",
+    "./scheduler": "./src/scheduler.js",
+    "./session": "./src/session.js",
+    "./protector": "./src/protector.js"
+  },
+  "dependencies": {
+    "@exomind/dialogue-core": "file:../dialogue-core"
+  }
+}

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1A1512">
+<title>富贵小安</title>
+<style>
+  :root {
+    --bg-root: #0A0A0B;
+    --bg-primary: #111113;
+    --bg-surface: #1A1A1E;
+    --bubble-ai: #1E1E23;
+    --bubble-user: #2A2820;
+    --text-primary: #F2F2F5;
+    --text-secondary: #9898A0;
+    --text-muted: #5C5C66;
+    --warm-gold: #E8A840;
+    --border-default: #2A2A30;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 48px; } /* 基准字号放大 */
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--bg-root);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  header {
+    height: 48px;
+    background: rgba(10,10,11,0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-default);
+    display: flex; align-items: center; padding: 0 16px;
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 16px; color: var(--warm-gold); font-weight: 600; }
+  #messages {
+    flex: 1; overflow-y: auto; padding: 12px 16px 80px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--text-muted); text-align: center; padding: 40px 20px;
+  }
+  .empty-state h2 { font-size: 20px; color: var(--text-primary); margin-bottom: 8px; }
+  .empty-state p { font-size: 14px; margin-bottom: 24px; }
+  .empty-state .hints {
+    display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 300px;
+  }
+  .empty-state .hint-btn {
+    background: var(--bg-surface); border: 1px solid var(--border-default);
+    color: var(--text-secondary); padding: 12px; border-radius: 12px;
+    font-size: 14px; cursor: pointer; text-align: left;
+  }
+  .empty-state .hint-btn:hover { border-color: var(--warm-gold); }
+  .bubble {
+    max-width: 80%; padding: 10px 14px; border-radius: 14px;
+    font-size: 15px; line-height: 1.5; animation: bubbleIn 0.25s ease-out;
+  }
+  @keyframes bubbleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .bubble-user {
+    align-self: flex-end; background: var(--bubble-user);
+    border-bottom-right-radius: 4px;
+  }
+  .bubble-ai {
+    align-self: flex-start; background: var(--bubble-ai);
+    border-bottom-left-radius: 4px;
+  }
+  .bubble .amount { color: var(--warm-gold); font-weight: 600; }
+  .bubble .time { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .result-card {
+    margin-top: 8px; padding: 12px; border-radius: 10px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border-default);
+  }
+  .result-card .total { font-size: 28px; color: var(--warm-gold); font-weight: 600; }
+  .result-card .item-row {
+    display: flex; justify-content: space-between; padding: 4px 0;
+    font-size: 13px; border-bottom: 1px solid var(--border-default);
+  }
+  #input-area {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--bg-primary); border-top: 1px solid var(--border-default);
+    display: flex; gap: 8px; padding: 12px 16px; z-index: 10;
+  }
+  #input-area input {
+    flex: 1; height: 44px; background: var(--bg-surface);
+    border: 1px solid var(--border-default); border-radius: 12px;
+    color: var(--text-primary); font-size: 15px; padding: 0 14px; outline: none;
+  }
+  #input-area input:focus { border-color: var(--warm-gold); }
+  #send-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    background: var(--warm-gold); color: #0A0A0B;
+    font-size: 18px; cursor: pointer; flex-shrink: 0;
+  }
+  #send-btn:disabled { background: var(--bg-surface); color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="xiaoanTitle" style="color:#E8A840">富贵小安</h1>
+  <span id="modeLabel" style="font-size:12px;color:#E8A840">· 简单</span>
+  <button onclick="toggleMode()" style="margin-left:.3rem;background:var(--bg-surface);border:1px solid var(--border-default);color:var(--text-secondary);padding:2px 8px;border-radius:6px;font-size:10px;cursor:pointer">切换模式</button>
+<div style="margin-left:auto;display:flex;gap:6px">
+  <button onclick="exportData()" style="background:var(--bg-surface);border:1px solid var(--border-default);color:var(--text-secondary);padding:4px 10px;border-radius:8px;font-size:11px;cursor:pointer">导出</button>
+  <button onclick="document.getElementById('importFile').click()" style="background:var(--bg-surface);border:1px solid var(--border-default);color:var(--text-secondary);padding:4px 10px;border-radius:8px;font-size:11px;cursor:pointer">导入</button>
+  <button onclick="backupAuto()" style="background:var(--bg-surface);border:1px solid var(--border-default);color:var(--text-secondary);padding:4px 10px;border-radius:8px;font-size:11px;cursor:pointer">备份</button>
+  <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+</div></header>
+
+<div id="monthBar" style="background:var(--bg-surface);border-bottom:1px solid var(--border-default);padding:8px 16px;display:flex;justify-content:space-around;text-align:center;font-size:13px;color:var(--text-secondary);flex-shrink:0">
+  <div><span id="monthTotal" style="color:var(--warm-gold);font-size:28px;font-weight:700">—</span><br>本月支出</div>
+  <div><span id="monthCount" style="color:var(--text-primary);font-size:20px;font-weight:600">—</span><br>笔数</div>
+  <div><span id="monthChange" style="font-size:16px">—</span><br>环比</div>
+</div>
+
+<div style="background:var(--bg-surface);border-bottom:1px solid var(--border-default);padding:10px 16px;font-size:13px;line-height:1.6;color:var(--text-secondary);flex-shrink:0">
+  <strong style="color:var(--warm-gold)">所有记账软件都在让你分类。</strong> 这里不做。<br>
+  你说「午饭25块」，它只记 {午饭, 25}，不映射到任何会计科目。<br>
+  查询时直接在你说过的原话里搜——没有下拉框，没有标签，像发微信一样。
+</div>
+
+<div id="statsBar" style="background:var(--bg-surface);border-bottom:1px solid var(--border-default);padding:6px 16px;font-size:11px;color:var(--text-muted);flex-shrink:0;display:flex;gap:16px">
+  <span>模式：<b id="modeStatLabel" style="color:var(--warm-gold)">简单</b></span>
+  <span id="statsRecordCount">记录：—</span>
+</div>
+
+<div id="messages">
+  <div class="empty-state" id="empty-state">
+    <h2>嗨，我是小安</h2>
+    <p>跟我说说你今天花了多少钱？</p>
+    <div class="hints">
+      <button class="hint-btn" onclick="send('午饭25块')">午饭25块</button>
+      <button class="hint-btn" onclick="send('买了三斤苹果45元')">买了三斤苹果45元</button>
+      <button class="hint-btn" onclick="send('这个月花了多少')">这个月花了多少</button>
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <button class="hint-btn" style="flex:1;text-align:center" onclick="send('这个月花了多少')">📊 汇总</button>
+        <button class="hint-btn" style="flex:1;text-align:center" onclick="send('这个月和上个月比')">📈 对比</button>
+        <button class="hint-btn" style="flex:1;text-align:center" onclick="send('随便找找')">🔍 模糊</button>
+      </div>
+      <button class="hint-btn" style="margin-top:6px" onclick="deletePrompt()">🗑 删除记录</button>
+    </div>
+  </div>
+</div>
+
+<div id="input-area">
+  <input type="text" id="input" placeholder="说说花了多少钱..." autocomplete="off">
+  <button id="send-btn" onclick="handleSend()" disabled>↑</button>
+</div>
+
+<script type="module">
+  import { FuguiXiaoan, createLocalStorage } from '../../packages/fugui-xiaoan/src/index.js';
+
+  // 初始化（LocalStorage 持久化 —— 刷新不丢数据）
+  const xiaoan = new FuguiXiaoan({ storage: createLocalStorage() });
+  const messages = document.getElementById('messages');
+  const input = document.getElementById('input');
+
+  // ── 会话状态机 ──
+  var convState=null,mode=(localStorage.getItem('xa_mode')||'simple'),_deleteTimer=null,_moreTimer=null;
+
+  window.toggleMode=function(){mode=mode==='simple'?'detailed':'simple';localStorage.setItem('xa_mode',mode);xiaoan.setMode(mode);var t=document.getElementById('xiaoanTitle');var l=document.getElementById('modeLabel');var c=xiaoan.getModeColor();t.style.color=c;l.style.color=c;l.textContent='· '+xiaoan.getModeLabel();var s=document.getElementById('modeStatLabel');if(s)s.textContent=xiaoan.getModeLabel()};
+  // 初始化模式UI
+  (function(){xiaoan.setMode(mode);var t=document.getElementById('xiaoanTitle'),l=document.getElementById('modeLabel'),c=xiaoan.getModeColor();t.style.color=c;l.style.color=c;l.textContent='· '+xiaoan.getModeLabel();})();
+
+  function resetConv(){convState=null;if(_deleteTimer){clearTimeout(_deleteTimer);_deleteTimer=null}if(_moreTimer){clearTimeout(_moreTimer);_moreTimer=null}}
+
+  function classifyIntent(text){
+    var t=text.trim(),s={intent:'record',conf:0},rec=0,qry=0,del=0;
+    // 记账：金额+动词信号
+    if(/\d+\s*[块元钱]/.test(t))rec+=35;
+    if(/[花了买付消费]\s*\d/.test(t))rec+=25;
+    if(/记[一一下笔个]/.test(t))rec+=20;
+    if(/加[一一下笔]/.test(t))rec+=15;
+    // 查询：问句信号
+    if(/花了?多[少钱]|总共|合计|汇总|统计/.test(t))qry+=30;
+    if(/查[一问下看]/.test(t))qry+=25;
+    if(/多[少錢钱]/.test(t))qry+=20;
+    if(/对比|比[较一]|贵[了]|便宜|涨|跌/.test(t))qry+=20;
+    if(/[哪几这]天|上[个]月|这[个]月/.test(t))qry+=15;
+    // 删除：删掉动词+目标
+    if(/删[除掉掉].*\S{2,}/.test(t))del+=40;
+    else if(/删[除掉掉]/.test(t))del+=25;
+    if(/去[除掉]|作废|撤销/.test(t))del+=20;
+    if(/不[要了记]/.test(t)&&!/记[一下].*[吗呢]/.test(t))del+=15;
+    // 选择最高分
+    if(del>qry&&del>rec&&del>30){s.intent='delete';s.conf=del}
+    else if(qry>rec&&qry>25){s.intent='query';s.conf=qry}
+    else if(rec>25&&rec>=qry){s.intent='record';s.conf=rec}
+    else if(rec>0){s.intent='record';s.conf=rec}
+    else{s.intent='other';s.conf=0}
+    return s;
+  }
+
+  function classifyQuery(text){
+    var t=text.trim(),single=0,sum=0,cmp=0,fuzz=0;
+    // 单笔信号：找具体某笔+有日期/时间参照
+    if(/查[一问下看]|找[一到下]/.test(t))single+=30;
+    if(/昨天|今天|这周|上周|上[个]月|这个月/.test(t))single+=25;
+    if(/那[一笔次个]|这[一].*(钱|花)/.test(t))single+=20;
+    // 汇总信号：合计+时间范围
+    if(/总共|合计|汇总|花了?多|总[共计]|加起[来]/.test(t))sum+=35;
+    if(/这个月|上[个]月|本周|这周|今年/.test(t))sum+=20;
+    if(/多[少錢钱]|一共/.test(t)&&single<30)sum+=15;
+    // 对比信号
+    if(/对比|比[较一]|跟上|比起/.test(t))cmp+=35;
+    if(/贵了|便宜|涨了|跌了/.test(t))cmp+=25;
+    if(/上[个]月|这[个]月/.test(t)&&cmp>0)cmp+=20;
+    // 模糊：无明确目标
+    if(!single&&!sum&&!cmp&&!/查/.test(t))fuzz+=30;
+    if(/随便|有没有|记过|印象|找找/.test(t))fuzz+=25;
+    // 取最高分+兜底
+    var best={sub:single>sum?single>cmp?'single':'compare':'summary',conf:20};
+    if(single>=best.conf){best.sub='single';best.conf=single}
+    if(sum>=best.conf){best.sub='summary';best.conf=sum}
+    if(cmp>=best.conf){best.sub='compare';best.conf=cmp}
+    if(fuzz>=best.conf){best.sub='fuzzy';best.conf=fuzz}
+    // 任何分类都没触发→模糊
+    if(single===0&&sum===0&&cmp===0&&fuzz===0){best.sub='fuzzy';best.conf=10}
+    return best;
+  }
+
+  function parseTimeRange(text){var now=Date.now(),day=86400000,today=new Date(now);today.setHours(0,0,0,0);if(/今天/.test(text))return{label:'今天',start:today.getTime(),end:now};if(/昨天/.test(text)){var d=today.getTime()-day;return{label:'昨天',start:d,end:d+day-1}}if(/本周|这周/.test(text)){var d=new Date(today);d.setDate(d.getDate()-d.getDay());return{label:'本周',start:d.getTime(),end:now}}if(/本月|这个月/.test(text)){var d=new Date(today);d.setDate(1);return{label:'本月',start:d.getTime(),end:now}}if(/上月|上个月/.test(text)){var d=new Date(today);d.setDate(1);d.setMonth(d.getMonth()-1);var e=new Date(today);e.setDate(1);e.setHours(0,0,0,0);return{label:'上月',start:d.getTime(),end:e.getTime()-1}}return{label:'全部',start:0,end:now}}
+  function extractKeyword(text){return text.replace(/[删了去掉要别不要作废记下这上那个里几次多少]|\d+\s*[块元钱]|\s/g,'').replace(/^(查|找|看|问|想|帮|我|你)/,'').trim()}
+
+  async function findForDelete(text){var all=await xiaoan.getAllRecords();if(!all.length)return[];var tr=parseTimeRange(text),kw=extractKeyword(text);all=all.filter(function(r){return r.createdAt>=tr.start&&r.createdAt<=tr.end});if(kw)all=all.filter(function(r){return r.item&&r.item.indexOf(kw)>=0});return all.slice(0,5)}
+
+  async function executeQuery(text,sub){
+    var all=await xiaoan.getAllRecords();if(!all.length)return{records:[],total:0,message:'还没有任何记录。'};
+    var tr=parseTimeRange(text),kw=extractKeyword(text);
+    var f=all.filter(function(r){return r.createdAt>=tr.start&&r.createdAt<=tr.end});if(kw)f=f.filter(function(r){return r.item&&r.item.indexOf(kw)>=0});
+    var total=f.reduce(function(s,r){return s+(r.amount||0)},0);
+    if(sub==='single'){if(!f.length)return{records:[],total:0,message:'没找到相关记录。'};var r=f[0],d=new Date(r.createdAt).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'});return{records:[r],total:r.amount,message:'找到了：'+d+' '+r.item+' '+r.amount+'元'}}
+    if(sub==='summary'){if(!f.length)return{records:[],total:0,message:'该时段没有相关记录。'};return{records:f,total:total,message:tr.label+(kw?' '+kw:'')+' 共'+f.length+'笔 合计'+total+'元'}}
+    if(sub==='compare'){var thisM=new Date();thisM.setDate(1);thisM.setHours(0,0,0,0);var lastM=new Date(thisM);lastM.setMonth(lastM.getMonth()-1);var nextM=new Date(thisM);nextM.setMonth(nextM.getMonth()+1);var cur=all.filter(function(r){return r.createdAt>=thisM.getTime()&&r.createdAt<nextM.getTime()&&(!kw||(r.item&&r.item.indexOf(kw)>=0))});var prev=all.filter(function(r){return r.createdAt>=lastM.getTime()&&r.createdAt<thisM.getTime()&&(!kw||(r.item&&r.item.indexOf(kw)>=0))});var cT=cur.reduce(function(s,r){return s+(r.amount||0)},0),pT=prev.reduce(function(s,r){return s+(r.amount||0)},0);if(!kw)kw='总花费';if(!cur.length&&!prev.length)return{records:[],total:0,message:'没有相关对比数据。'};var diff=cT-pT,ds=diff>0?'多了'+diff+'元':diff<0?'少了'+Math.abs(diff)+'元':'一样';return{records:[],total:0,message:kw+'：本月共'+cur.length+'笔合计'+cT+'元，上月共'+prev.length+'笔合计'+pT+'元。本月比上月'+ds+'。'}}
+    // fuzzy
+    if(!f.length)f=all.slice(-5);return{records:f.slice(-5).reverse(),total:0,message:'找到 '+f.slice(-5).length+' 条相关记录'};
+  }
+
+  // 主路由
+  window.send = async function(text) {
+    addBubble(text, 'user');
+    document.getElementById('empty-state')?.remove();
+    // 删除确认状态
+    if(convState&&convState.phase==='confirmDelete'){if(_deleteTimer){clearTimeout(_deleteTimer);_deleteTimer=null}if(/确认|是|对|好|行|删/.test(text)){var cr=await xiaoan.delete(text,{confirmed:true,targetId:convState.context.recordId});addBubble(cr.type==='confirm'?cr.message:cr.message,'ai')}else{addBubble('好的，不删了。','ai')}resetConv();updateMonthSummary();scrollBottom();return}
+    // 记账追问
+    if(convState&&convState.phase==='recordClarify'){try{var r1=await xiaoan.record(text);if(r1.type==='confirm'){addBubble(formatConfirm(r1),'ai');resetConv();addBubble('已经记好了。还有其他需要记的吗？','ai');convState={phase:'recordMore'};_moreTimer=setTimeout(function(){if(convState&&convState.phase==='recordMore'){addBubble('小安都记好了，拜拜。','ai');resetConv()}},10000)}else if(r1.type==='clarify'){addBubble(r1.message,'ai')}else{addBubble(r1.message,'ai');resetConv()}}catch(e){addBubble('出错了：'+e.message,'ai');resetConv()}updateMonthSummary();scrollBottom();return}
+    // 继续记账
+    if(convState&&convState.phase==='recordMore'){if(_moreTimer){clearTimeout(_moreTimer);_moreTimer=null}if(/没[有了有]|不[用了需要]|结[束了束]|好/.test(text)){addBubble('小安都记好了，拜拜。','ai');resetConv();scrollBottom();return}if(/不记了|算了不记/.test(text)){addBubble('好的，那就不记了。拜拜。','ai');resetConv();scrollBottom();return}try{var r2=await xiaoan.record(text);if(r2.type==='confirm'){addBubble(formatConfirm(r2),'ai');addBubble('已经记好了。还有其他需要记的吗？','ai');_moreTimer=setTimeout(function(){if(convState&&convState.phase==='recordMore'){addBubble('小安都记好了，拜拜。','ai');resetConv()}},10000)}else if(r2.type==='clarify'){addBubble(r2.message,'ai');convState={phase:'recordClarify'}}else{addBubble(r2.message,'ai');resetConv()}}catch(e){addBubble('出错了：'+e.message,'ai');resetConv()}updateMonthSummary();scrollBottom();return}
+    // 查询追问
+    if(convState&&convState.phase==='queryPending'){try{var r3=await executeQuery(text,convState.context.sub);addBubble(r3.message+formatResult(r3),'ai')}catch(e){addBubble('查询出错：'+e.message,'ai')}resetConv();scrollBottom();return}
+
+    resetConv();
+    var intent=classifyIntent(text);
+    try{
+      if(intent.intent==='record'){
+        if(intent.conf>=80){var rr=await xiaoan.record(text);if(rr.type==='confirm'){addBubble(formatConfirm(rr),'ai');addBubble('已经记好了。还有其他需要记的吗？','ai');convState={phase:'recordMore'};_moreTimer=setTimeout(function(){if(convState&&convState.phase==='recordMore'){addBubble('小安都记好了，拜拜。','ai');resetConv()}},10000)}else if(rr.type==='clarify'){addBubble(rr.message,'ai');convState={phase:'recordClarify'}}else if(rr.type==='result'){addBubble(rr.message+formatResult(rr.result),'ai')}else{addBubble(rr.message,'ai')}}
+        else if(intent.conf>=60){addBubble('您是想要记账吗？如果是，请告诉我金额和用途~','ai');convState={phase:'recordClarify'}}
+        else{addBubble('不太确定你想做什么。记账的话可以试试说"午饭25块"？','ai')}
+      }else if(intent.intent==='query'){
+        var qi=classifyQuery(text);
+        // 单笔查询：检查时间+种类是否齐全
+        if(qi.sub==='single'){
+          var kw=extractKeyword(text),tr=parseTimeRange(text);
+          var needTime=tr.label==='全部',needKw=!kw;
+          if(needTime&&needKw){addBubble('您想查哪一天的哪一笔呢？','ai');convState={phase:'queryPending',context:{sub:'single'}};scrollBottom();return}
+          if(!needKw){addBubble('您讲的是哪一天的'+kw+'呢？','ai');convState={phase:'queryPending',context:{sub:'single'}};scrollBottom();return}
+          if(needTime){addBubble(kw+'有好几笔，您想问哪个时间段的？','ai');convState={phase:'queryPending',context:{sub:'single'}};scrollBottom();return}
+        }
+        if(qi.conf>=80||(intent.conf>=80&&qi.conf>=50)){var qr=await executeQuery(text,qi.sub);addBubble(qr.message+formatResult(qr),'ai')}
+        else if(qi.conf>=60){addBubble('您是想要查单笔记录、看汇总、做对比，还是随便找找？','ai');convState={phase:'queryPending',context:{sub:qi.sub}}}
+        else{addBubble('没太明白您想查什么。是查某一笔、查汇总、做对比，还是随便找找？','ai');convState={phase:'queryPending',context:{sub:'fuzzy'}}}
+      }else if(intent.intent==='delete'){
+        if(intent.conf>=80){var dr=await xiaoan.delete(text);if(dr.type==='confirm'){addBubble(dr.message,'ai')}else if(dr.type==='clarify'){if(dr.records){var list=dr.records.map(function(r,i){return (i+1)+'. '+r.date+' '+r.item+' '+r.amount+'元'}).join('\n');addBubble(dr.message+'\n'+list,'ai')}else if(dr.needConfirm){addBubble(dr.message,'ai');convState={phase:'confirmDelete',context:{recordId:dr.record.id}};_deleteTimer=setTimeout(function(){addBubble('超时未确认，已取消删除。','ai');resetConv()},15000)}else{addBubble(dr.message,'ai')}}else{addBubble(dr.message||'删除失败','ai')}}
+        else if(intent.conf>=60){addBubble('要删除记录吗？说一下时间或种类，比如"删除昨天的午饭"','ai')}
+        else{addBubble('不太确定你想删除什么。可以试试说"删除昨天的午饭"','ai')}
+      }else{
+        if(/你能做|有什么[功用]|可以做什么|怎么用/.test(text))addBubble('小安只能记账哦。您可以说"小安出来记一下"来记账，或者问我查询、删除已有的记录。','ai');
+        else if(/笑话|聊天|唱歌|故事|天气/.test(text))addBubble('小安只会记账，不会聊天哦。您要记账吗？','ai');
+        else if(/设置|模式|换/.test(text))addBubble('请点顶部的"切换模式"修改记账模式。这里只能记账、查询和删除哦。','ai');
+        else if(/谢谢|感谢|好[的了]|知道/.test(text))addBubble('不客气。有其他需要记账的吗？','ai');
+        else addBubble('没太明白。小安只会记账，您要说"记一下什么"才行哦。','ai');
+      }
+    }catch(e){addBubble('出错了：'+e.message,'ai')}
+    updateMonthSummary();scrollBottom();
+  };
+
+  window.deletePrompt = function() {
+    input.value = '删掉 ';
+    input.focus();
+    document.getElementById('send-btn').disabled = false;
+  };
+
+  window.handleSend = function() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    window.send(text);
+  };
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleSend();
+    document.getElementById('send-btn').disabled = !input.value.trim();
+  });
+  
+  input.addEventListener('input', () => {
+    document.getElementById('send-btn').disabled = !input.value.trim();
+  });
+
+  function addBubble(html, role) {
+    const div = document.createElement('div');
+    div.className = `bubble bubble-${role}`;
+    div.innerHTML = html + `<div class="time">${new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'})}</div>`;
+    messages.appendChild(div);
+  }
+
+  function formatConfirm(result) {
+    return result.message.replace(/(\d+(?:\.\d+)?[元块])/g, '<span class="amount">$1</span>');
+  }
+
+  function formatResult(result) {
+    if (!result || !result.records || result.records.length === 0) return '';
+    let html = '<div class="result-card">';
+    html += `<div class="total">${result.total.toFixed(2)}<span style="font-size:14px">元</span></div>`;
+    for (const r of result.records.slice(0, 10)) {
+      const date = new Date(r.createdAt).toLocaleDateString('zh-CN', {month:'numeric',day:'numeric'});
+      html += `<div class="item-row"><span>${date} ${r.item}</span><span class="amount">${r.amount}元</span></div>`;
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function scrollBottom() {
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  // ── 导出 / 导入 ──
+  window.exportData = async function() {
+    const records = await xiaoan.getAllRecords();
+    const json = JSON.stringify(records, null, 2);
+    const blob = new Blob([json], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `fugui-xiaoan-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+  };
+
+  window.importData = async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const records = JSON.parse(text);
+      await xiaoan.clearAll();
+      for (const r of records) { await xiaoan.storage.save(r); }
+      updateMonthSummary();
+      location.reload();
+    } catch(err) {
+      alert('导入失败：' + err.message);
+    }
+    e.target.value = '';
+  };
+
+  // ── 自动备份到剪贴板 ──
+  window.backupAuto = async function() {
+    try {
+      const records = await xiaoan.getAllRecords();
+      await navigator.clipboard.writeText(JSON.stringify(records));
+      const el = document.getElementById('toast');
+      if (el) { el.textContent = '已备份 '+records.length+' 条记录到剪贴板'; el.style.display='block'; setTimeout(function(){el.style.display='none'},2000); }
+    } catch(e) { alert('备份失败：'+e.message); }
+  };
+
+  // ── 月度汇总 ──
+  function updateMonthSummary() {
+    xiaoan.getAllRecords().then(function(records) {
+      var now = new Date(); var total=0, count=0;
+      var thisMonth = now.getMonth(), thisYear = now.getFullYear();
+      var lastMonth = thisMonth===0 ? 11 : thisMonth-1, lastYear = thisMonth===0 ? thisYear-1 : thisYear;
+      var lastTotal = 0;
+      for (var r of records) {
+        var d = new Date(r.createdAt||r.created_at||r.date||0);
+        if (d.getFullYear()===thisYear && d.getMonth()===thisMonth) { total+=r.amount||0; count++; }
+        if (d.getFullYear()===lastYear && d.getMonth()===lastMonth) lastTotal+=r.amount||0;
+      }
+      document.getElementById('monthTotal').textContent = '¥'+total.toFixed(0);
+      document.getElementById('monthCount').textContent = count;
+      var rc=document.getElementById('statsRecordCount');if(rc)rc.textContent='记录：'+records.length;
+      var ml=document.getElementById('modeStatLabel');if(ml){ml.textContent=xiaoan.getModeLabel();ml.style.color=xiaoan.getModeColor()}
+      if (lastTotal>0) {
+        var ch = ((total-lastTotal)/lastTotal*100).toFixed(0);
+        document.getElementById('monthChange').textContent = (ch>=0?'↑':'↓')+Math.abs(ch)+'%';
+        document.getElementById('monthChange').style.color = ch>=0 ? 'var(--warn)' : 'var(--ok)';
+      }
+    });
+  }
+
+  // ── 注册 Service Worker ──
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
+
+  // 页面加载后更新汇总
+  updateMonthSummary();
+</script>
+
+</body>
+</html>

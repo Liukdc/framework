@@ -1,0 +1,78 @@
+/* SPDX-License-Identifier: MIT | Copyright (c) 2026 刘劲松 */
+:root{--purple:#7C3AED;--purple2:#A78BFA;--bg:#0F0F1A;--bg2:#1A1A2E;--bg3:#16213E;--card:#1E1E36;--tx:#F0F0F5;--tx2:#9CA3AF;--tx3:#6B7280;--border:#2A2A45;--green:#22C55E;--red:#EF4444;--amber:#F59E0B;--r:14px;--navH:64px;--headerH:52px;--shadow:0 2px 16px rgba(124,58,237,.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px;font-family:-apple-system,'PingFang SC','Noto Sans SC',sans-serif;background:var(--bg);color:var(--tx);-webkit-tap-highlight-color:transparent}
+body{max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:var(--navH)}
+
+header{position:sticky;top:0;z-index:10;height:var(--headerH);display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:var(--bg2);border-bottom:1px solid var(--border)}
+header h1{font-size:19px;font-weight:700;color:var(--purple2)}
+header .badge{font-size:12px;background:var(--purple);color:#fff;padding:3px 10px;border-radius:10px}
+
+.page{display:none;padding:16px}
+.page.active{display:block}
+
+/* Tab */
+#tabBar{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;height:var(--navH);display:flex;background:var(--bg2);border-top:1px solid var(--border);z-index:10}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--tx3);cursor:pointer;transition:.2s;border:none;background:none}
+.tab.active{color:var(--purple2);font-weight:600}
+.tab .icon{font-size:22px;margin-bottom:2px}
+
+/* Record */
+#page-record{padding:16px}
+.input-area{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.input-area input, .input-area textarea{width:100%;padding:14px 16px;border-radius:var(--r);border:1.5px solid var(--border);background:var(--card);color:var(--tx);font-size:15px;outline:none;font-family:inherit;resize:none}
+.input-area input:focus, .input-area textarea:focus{border-color:var(--purple)}
+.input-area textarea{min-height:80px}
+.key-hint{font-size:12px;color:var(--tx3);text-align:right}
+.rec-btn{width:100%;padding:14px;border-radius:var(--r);font-size:16px;font-weight:600;border:none;cursor:pointer;background:linear-gradient(135deg,var(--purple),var(--purple2));color:#fff;transition:.2s}
+.rec-btn:hover{opacity:.9}
+
+/* List */
+.fragment-list{display:flex;flex-direction:column;gap:8px}
+.frag-card{padding:14px 16px;background:var(--card);border-radius:var(--r);border-left:3px solid var(--purple);cursor:pointer;transition:.2s}
+.frag-card:hover{border-left-color:var(--purple2)}
+.frag-card .key{font-size:15px;font-weight:600;color:var(--purple2);margin-bottom:4px}
+.frag-card .key.temp{color:var(--amber)}
+.frag-card .content{font-size:14px;color:var(--tx);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.frag-card .meta{font-size:11px;color:var(--tx3);margin-top:6px;display:flex;gap:12px}
+.frag-card .tag{font-size:10px;padding:2px 8px;border-radius:6px;background:var(--bg3);color:var(--tx2);display:inline-block;margin-top:4px}
+.frag-card .tag.temp-tag{background:rgba(245,158,11,.1);color:var(--amber)}
+.frag-card .tag.keep-tag{background:rgba(34,197,94,.1);color:var(--green)}
+.frag-card .tag.del-tag{background:rgba(239,68,68,.1);color:var(--red)}
+
+/* Search */
+#searchBox{width:100%;padding:12px 16px;border-radius:var(--r);border:1.5px solid var(--border);font-size:15px;outline:none;background:var(--card);color:var(--tx);margin-bottom:14px}
+#searchBox:focus{border-color:var(--purple)}
+
+/* Cleanup */
+.cleanup-card{padding:20px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border);margin-bottom:12px;text-align:center}
+.cleanup-card .prompt{font-size:15px;margin-bottom:16px;color:var(--tx)}
+.cleanup-card .actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.cleanup-card button{padding:10px 20px;border-radius:8px;font-size:14px;border:none;cursor:pointer;font-weight:500}
+.btn-keep{background:var(--green);color:#fff}
+.btn-delete{background:var(--red);color:#fff}
+.btn-skip{background:var(--bg);color:var(--tx2);border:1px solid var(--border)}
+.btn-name{background:var(--purple);color:#fff}
+
+/* Settings */
+.setting-item{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+.setting-item .label{font-size:14px}
+.setting-item .hint{font-size:11px;color:var(--tx3)}
+.toggle{width:48px;height:28px;border-radius:14px;background:var(--border);position:relative;cursor:pointer;transition:.2s;border:none}
+.toggle.on{background:var(--purple)}
+.toggle::after{content:'';position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s}
+.toggle.on::after{left:23px}
+.btn-sm{padding:8px 18px;border-radius:8px;font-size:13px;border:1.5px solid var(--purple);background:transparent;color:var(--purple2);cursor:pointer}
+.btn-sm:hover{background:var(--purple);color:#fff}
+.btn-sm.danger{border-color:var(--red);color:var(--red)}
+.btn-sm.danger:hover{background:var(--red);color:#fff}
+
+/* Toast */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:20px;font-size:14px;z-index:100;background:var(--purple);color:#fff;opacity:0;transition:opacity .3s;pointer-events:none}
+#toast.show{opacity:1}
+
+.empty{text-align:center;padding:40px 20px;color:var(--tx3)}
+.empty .icon{font-size:48px;margin-bottom:12px}
+.empty p{font-size:14px}
+
+@media(max-width:360px){html{font-size:14px}}

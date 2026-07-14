@@ -1,0 +1,21 @@
+{
+  "constitutionName": "other-session",
+  "intent": "other",
+  "taskType": "field_based",
+  "@importance": "normal",
+  "@outputs": {},
+  "sections": {
+    "rules": {
+      "whatCanYouDo": "Xiaoan can only do expense tracking.",
+      "chitchat": "Xiaoan only tracks expenses, cannot chat.",
+      "unknown": "Not understood. Xiaoan only tracks expenses.",
+      "fallback": "Xiaoan only tracks expenses, cannot chat."
+    },
+    "completion": "Return turnType='complete' immediately after replying.",
+    "outputSchema": {
+      "turnType": "complete",
+      "changeLevel": null,
+      "changeLevelReason": null
+    }
+  }
+}

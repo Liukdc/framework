@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "common-rules",
+  "description": "Fugui Xiaoan common rules. 3 rules. Mandatory for all LLM calls.",
+  "rules": [
+    {
+      "ruleId": 1,
+      "ruleName": "Output Pure JSON",
+      "content": "All LLM outputs must be pure JSON.",
+      "responsibility": "DET recheck (L1 structure check)",
+      "irreducible": true
+    },
+    {
+      "ruleId": 2,
+      "ruleName": "Honest Judgment + Concise",
+      "content": "Max 30 chars per sentence. Stick to correct judgment, correct mistakes, never pretend to agree.",
+      "responsibility": "phase constitution prompt",
+      "irreducible": true
+    },
+    {
+      "ruleId": 3,
+      "ruleName": "One Thing at a Time",
+      "content": "Honest, no fabrication. In field_based tasks, strongly related fields may be asked together.",
+      "responsibility": "phase constitution prompt + DET recheck (cross-task extension)",
+      "irreducible": true,
+      "taskTypeImpact": {
+        "fieldBased": {
+          "detMethod": "DET field whitelist (needSemanticExtensionCheck=false)"
+        },
+        "topicBased": {
+          "detMethod": "topic boundary check"
+        }
+      }
+    }
+  ]
+}

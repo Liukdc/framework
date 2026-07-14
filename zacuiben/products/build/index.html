@@ -1,0 +1,34 @@
+<!-- SPDX-License-Identifier: MIT | Copyright (c) 2026 刘劲松 -->
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#7C3AED"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="杂碎本"><link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%237C3AED'/><text x='50' y='68' text-anchor='middle' font-size='50' fill='white' font-family='sans-serif'>碎</text></svg>">
+<title>杂碎本</title><link rel="stylesheet" href="css/app.css"></head><body>
+<header><h1>杂碎本</h1><span class="badge" id="fragCount">0 条</span></header>
+<div id="pages">
+<div class="page active" id="page-record">
+<div class="input-area"><input type="text" id="keyInput" placeholder="名称（留空自动生成）"><textarea id="contentInput" placeholder="记点什么…"></textarea><div class="key-hint">格式：名称 —— 内容 或直接填写内容自动生成名称</div></div>
+<button class="rec-btn" onclick="doRecord()">记下碎片</button>
+<div class="fragment-list" id="recordList" style="margin-top:16px"></div>
+<div class="empty" id="emptyRec"><div class="icon">📝</div><p>还没记过碎片</p></div></div>
+<div class="page" id="page-query">
+<input type="text" id="searchBox" placeholder="搜碎片…" oninput="doSearch()"><div class="fragment-list" id="searchList"></div>
+<div class="empty" id="emptySearch"><div class="icon">🔍</div><p>搜一下试试</p></div></div>
+<div class="page" id="page-cleanup"><div id="cleanupArea"></div></div>
+<div class="page" id="page-settings">
+<div class="setting-item"><span class="label">定时清理</span><span id="autoCleanLabel" style="color:var(--purple2);font-size:13px">待设置</span></div>
+<div class="setting-item"><span class="label">导入数据</span><button class="btn-sm" onclick="importJSON()">导入 JSON</button></div>
+<div class="setting-item"><span class="label">导出数据</span><button class="btn-sm" onclick="exportJSON()">导出 JSON</button></div>
+<div class="setting-item"><span class="label">清空全部</span><button class="btn-sm danger" onclick="clearAll()">清空</button></div>
+</div></div>
+<nav id="tabBar">
+<button class="tab active" data-page="record"><span class="icon">📝</span>记录</button>
+<button class="tab" data-page="query"><span class="icon">🔍</span>检索</button>
+<button class="tab" data-page="cleanup"><span class="icon">🧹</span>整理</button>
+<button class="tab" data-page="settings"><span class="icon">⚙️</span>设置</button>
+</nav><div id="toast"></div>
+<script type="module" src="js/app.js"></script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+document.querySelectorAll('#tabBar .tab').forEach(b=>b.onclick=function(){document.querySelectorAll('#tabBar .tab').forEach(x=>x.classList.remove('active'));this.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+this.dataset.page).classList.add('active')})</script>
+</body></html>

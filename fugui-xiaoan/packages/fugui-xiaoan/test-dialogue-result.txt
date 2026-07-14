@@ -1,0 +1,10 @@
+file:///D:/WORKBUDDY/2026-06-21-12-50-52/open-terminal/fugui-xiaoan/packages/fugui-xiaoan/test-dialogue.js:5
+import { FuguiXiaoan, createMemoryStorage, DialogueEngine, DialogueState, clarifyQuestion, tryParseField } from './src/index.js';
+                                           ^^^^^^^^^^^^^^
+SyntaxError: The requested module './src/index.js' does not provide an export named 'DialogueEngine'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.22.2

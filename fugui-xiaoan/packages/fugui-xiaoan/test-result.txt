@@ -1,0 +1,79 @@
+TAP version 13
+# 富贵小安 测试套件 — 2026-07-14T11:55:29.125Z
+
+# ── intent-router.js ──
+ok 1 - classifyIntent "午饭25块" → record
+ok 2 - classifyIntent "这个月花了多少" → query
+ok 3 - classifyIntent "删掉去掉午饭" → delete
+ok 4 - classifyIntent "你好" → other
+ok 5 - classifyIntent "" → other with confidence 0
+ok 6 - classifyIntent null → other with confidence 0
+ok 7 - classifyIntent 高置信度: 多关键词记账≥80
+ok 8 - classifyIntent 模糊输入置信度<60
+ok 9 - CONFIDENCE_HIGH === 80
+ok 10 - CONFIDENCE_MEDIUM === 60
+ok 11 - classifyQuerySub "昨天午饭多少" → single
+ok 12 - classifyQuerySub "这个月总共" → summary
+ok 13 - classifyQuerySub "排骨贵了吗" → compare
+ok 14 - classifyQuerySub "随便找找" → fuzzy
+ok 15 - classifyQuerySub "" → fuzzy with confidence 0
+
+# ── clarify.js ──
+ok 16 - createClarifyContext() 返回独立上下文
+ok 17 - 两个上下文互相隔离
+ok 18 - checkAndAsk → getState=ASKED → handleReply → getState=NORMAL
+ok 19 - handleReply 对不存在/已处理的 id 返回 false
+ok 20 - checkAndAsk 对已在追问中的 id 返回 null
+ok 21 - 追问超时 → getState=ABANDONED
+ok 22 - getQuestion 返回追问文本
+ok 23 - getQuestion 对不存在的 id 返回 null
+ok 24 - clear 移除指定追问
+ok 25 - cleanTimeouts 清理过期追问
+
+# ── storage.js ──
+ok 37 - EncryptedLocalStorage 构造函数 encryptKey 必填
+ok 38 - EncryptedLocalStorage 构造函数 encryptKey 为空字符串也抛错
+
+# ── index.js 核心流程 ──
+ok 40 - FuguiXiaoan 实例化默认 simple 模式
+ok 41 - FuguiXiaoan 实例化可指定 detailed 模式
+ok 42 - FuguiXiaoan 实例化可传入自定义 storage
+ok 43 - getMode / setMode 切换
+ok 44 - getModeLabel 返回中文标签
+ok 45 - getModeColor 返回主题色
+ok 26 - MemoryStorage save 返回含 id 的完整记录
+ok 27 - MemoryStorage save 填充默认值
+ok 34 - MemoryStorage remove 删除不存在记录返回 false
+ok 48 - record 无金额只有数量 → 返回 clarify（追问金额）
+ok 49 - record 无法理解 → 返回 error
+ok 50 - record 空字符串 → error
+ok 39 - MemoryStorage 和 LocalStorageStorage save 返回结构一致
+ok 46 - record("午饭25块") → 记账成功
+ok 52 - detailed 模式：有金额无数量 → 追问数量
+ok 54 - delete 无匹配 → 返回提示
+ok 29 - MemoryStorage query 按日期范围过滤
+ok 30 - MemoryStorage query 不区分大小写
+ok 31 - MemoryStorage query 结果按时间倒序
+ok 32 - MemoryStorage all 返回全部记录
+ok 33 - MemoryStorage remove 删除存在记录返回 true
+ok 51 - record 追问回复流程（金额追问）
+ok 61 - 多笔拆分记账
+ok 28 - MemoryStorage query 按关键词过滤
+ok 35 - MemoryStorage clear 清空所有记录
+ok 47 - record 包含数量+单位的输入 → 成功
+ok 55 - delete 匹配一条 → 需要二次确认
+ok 59 - record 被识别为查询 → 路由到 query
+ok 53 - detailed 模式：追问数量后回复 → 补全成功
+ok 36 - LocalStorageStorage save/query/all/remove/clear
+ok 58 - clearAll 清空所有数据
+ok 60 - 同一实例多次 record 不互相干扰
+ok 56 - delete 二次确认后执行删除
+ok 57 - getAllRecords 返回所有记录
+
+# ── 测试完成 ──
+# 总计: 61 条
+# 通过: 61 条
+# 失败: 0 条
+# 通过率: 100%
+
+# ✓ 全部通过!

@@ -1,0 +1,19 @@
+{
+  "constitutionName": "compare-session",
+  "intent": "compare",
+  "taskType": "field_based",
+  "@importance": "normal",
+  "@outputs": { "result": "critical" },
+  "sections": {
+    "rules": {
+      "required": ["category", "timeRange1", "timeRange2"],
+      "missingField": "Ask for missing fields."
+    },
+    "offTaskDetection": "User input deviates from compare task -> return turnType='off-task'.",
+    "outputSchema": {
+      "turnType": "ask|reply|complete|off-task|giveup|validation_failed",
+      "changeLevel": "null|major|minor|invalid",
+      "changeLevelReason": "null|One-sentence reason"
+    }
+  }
+}
