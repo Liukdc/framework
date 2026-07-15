@@ -894,7 +894,76 @@ export {
 export { CleanupScheduler } from './scheduler.js';
 export { CleanupSession } from './session.js';
 export { ProtectionManager } from './protector.js';
-export { DialogueEngine, State as DialogueState } from './dialogue-engine.js';
 export { identifyIntent, generateReply, hasApiKey } from './state-llm.js';
+
+// ═══════════════════════════════════════════════════════════
+// v3.0 新模块
+// ═══════════════════════════════════════════════════════════
+
+// turnType
+export {
+  TurnType,
+  ChangeLevel,
+  AskingField,
+  changeLevelDefaults,
+  validateTurn,
+  createTurn,
+  createValidationFailed,
+  isValidChangeLevel,
+  isValidTurnType,
+} from './turnType.js';
+
+// tunables
+export {
+  getTunable,
+  setTunable,
+  detectConflicts,
+  getAllParamDefs,
+  getParamDef,
+  createDefaultState,
+  isValidTunableName,
+} from './tunables.js';
+
+// root-constitution
+export {
+  ROOT_CONSTITUTION,
+  deepFreeze,
+  getArticle,
+  getAllArticles,
+  validateAgainstRoot,
+  verifyIntegrity,
+} from './root-constitution.js';
+
+// constitution-sessions
+export {
+  COMMON_RULES,
+  intentRecognitionConstitution,
+  recordConstitution,
+  searchConstitution,
+  organizeConstitution,
+  otherConstitution,
+  getSessionConstitution,
+  getAllSessionConstitutions,
+  buildPrompt,
+  buildCompactPrompt,
+} from './constitution-sessions.js';
+
+// context-manager
+export {
+  ContextManager,
+  _scoreMatch,
+  fieldLevelHardGate,
+} from './context-manager.js';
+
+// state-machine
+export {
+  State as StateMachineState,
+  StateMachine,
+  AntiFlapGuard,
+  DET,
+  matchPassword,
+  extractAfterWake,
+  validateAttachments,
+} from './state-machine.js';
 
 export default Zacuiben;
