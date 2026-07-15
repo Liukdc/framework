@@ -94,7 +94,7 @@ export class MemoryStorage extends StorageBackend {
     const now = new Date().toISOString();
     const saved = {
       id,
-      name: (record.content || record.name || '').substring(0, 20),
+      name: record.name || (record.content || '').substring(0, 20),
       content: record.content || '',
       isProtected: !!record.isProtected,
       status: record.status || 'pending',
@@ -192,7 +192,7 @@ export class LocalStorageStorage extends StorageBackend {
     const now = new Date().toISOString();
     const saved = {
       id,
-      name: (record.content || record.name || '').substring(0, 20),
+      name: record.name || (record.content || '').substring(0, 20),
       content: record.content || '',
       isProtected: !!record.isProtected,
       status: record.status || 'pending',

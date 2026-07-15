@@ -12,6 +12,7 @@
  */
 
 import { SessionState, RecordStatus } from './types.js';
+import { isValidKey } from './valid-key.js';
 
 /**
  * 清理会话
@@ -265,47 +266,7 @@ export class CleanupSession {
    * @returns {boolean}
    * @private
    */
-  _isValidKey(key) {
-    if (!key || !key.trim()) return false;
-
-    // 基础词性词典（常用名词、动词、形容词）
-    const nounSet = new Set([
-      '书', '笔', '纸', '灯', '门', '窗', '房', '家', '人', '手', '脚', '头', '眼', '耳', '口', '鼻',
-      '天', '地', '山', '水', '火', '风', '雨', '雪', '云', '雷', '海', '河', '湖', '路', '桥', '车',
-      '花', '草', '树', '木', '叶', '果', '鸡', '牛', '猪', '鱼', '猫', '狗', '鸟', '虫', '马',
-      '心', '情', '感', '爱', '恨', '思', '想', '梦', '意', '念', '事', '物', '时', '日', '月', '年',
-      '话', '语', '字', '文', '章', '书', '信', '诗', '歌', '画', '曲', '音', '乐',
-      '饭', '菜', '茶', '酒', '餐', '米', '面', '汤', '糖', '盐', '醋', '油',
-      '工作', '学习', '项目', '计划', '任务', '笔记', '记录', '想法', '灵感', '问题', '方案',
-      '代码', '文档', '设计', '会议', '报告', '分析', '数据', '信息', '知识', '技能', '经验',
-      '朋友', '家庭', '生活', '健康', '运动', '旅行', '美食', '电影', '音乐', '照片', '视频',
-      '电脑', '手机', '键盘', '屏幕', '程序', '应用', '网站', '链接', '账号', '密码',
-      '名字', '地址', '电话', '邮箱', '日期', '时间', '地点', '事情', '东西',
-    ]);
-
-    // 抽取 Key 中的中文字符序列作为词元
-    const segments = key.match(/[\u4e00-\u9fa5]+/g) || [];
-
-    // 检查是否包含至少一个名词
-    for (const seg of segments) {
-      // 先尝试匹配双字词
-      for (let i = 0; i < seg.length - 1; i++) {
-        const bigram = seg.substring(i, i + 2);
-        if (nounSet.has(bigram)) return true;
-      }
-      // 再尝试单字匹配
-      for (const ch of seg) {
-        if (nounSet.has(ch)) return true;
-      }
-    }
-
-    // 如果没有任何中文字符，至少检查是否有英文名词（简化处理）
-    if (segments.length === 0 && /[a-zA-Z]{2,}/.test(key)) {
-      return true;
-    }
-
-    return false;
-  }
+  _isValidKey(key) { return isValidKey(key); }
 
   /**
    * 统计附件中的图片数量

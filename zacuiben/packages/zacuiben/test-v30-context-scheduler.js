@@ -76,7 +76,7 @@ async function main() {
   testAddTurnAndBuildPrompt();
   testFieldLevelHardGate();
   testScoreMatch();
-  testArchiveContext();
+  testUpdateGraph();
   testInjectOffTaskSuspicion();
   testContextStatsAndClear();
   testStateEnum();
@@ -96,6 +96,9 @@ async function main() {
   await testStateMachineColdStart();
   await testStateMachineTurnTypeRouting();
   await testStateMachineReset();
+  await testCase4_OffTaskE2E();
+  await testCase9_ModifyFilledFieldE2E();
+  testCase10_CrossTurnReferenceE2E();
 
   console.log(`1..${tests}`);
   console.log(`\n# ${passed}/${tests} passed, ${failed} failed`);
@@ -120,7 +123,7 @@ function testContextConstructor() {
   cm2.setTurnHistoryLimit(10);
   // 通过 archive 验证 limit
   for (let i = 0; i < 15; i++) {
-    cm2.archiveContext('user', `msg${i}`);
+    cm2.updateGraph('user', `msg${i}`);
   }
   const hist2 = cm2.getHistory();
   ok(hist2.length <= 10, '自定义 limit=10 → 历史 ≤ 10 条');
@@ -146,15 +149,15 @@ function testAddTurnAndBuildPrompt() {
   deepEqual(ctx1.history, [], 'buildPromptContext 空历史');
 
   // 有历史
-  cm.archiveContext('user', '你好', { intent: 'other' });
-  cm.archiveContext('assistant', '在的', { turnType: 'reply' });
+  cm.updateGraph('user', '你好', { intent: 'other' });
+  cm.updateGraph('assistant', '在的', { turnType: 'reply' });
 
   const ctx2 = cm.buildPromptContext('record', { currentInput: '记一下：买水果' });
   equal(ctx2.history.length, 2, 'buildPromptContext 含 2 条历史');
 
   // record 意图截断为最近 5 轮
   for (let i = 0; i < 10; i++) {
-    cm.archiveContext('user', `msg${i}`);
+    cm.updateGraph('user', `msg${i}`);
   }
   const ctx3 = cm.buildPromptContext('record', { currentInput: '最新' });
   ok(ctx3.history.length <= 5, 'record 截断 ≤ 5 轮');
@@ -251,36 +254,36 @@ function testScoreMatch() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// archiveContext
+// updateGraph
 // ═══════════════════════════════════════════════════════════
 
-function testArchiveContext() {
-  console.log('\n# ===== archiveContext =====');
+function testUpdateGraph() {
+  console.log('\n# ===== updateGraph =====');
 
   const cm = new ContextManager({ turnHistoryLimit: 5 });
 
-  cm.archiveContext('user', '测试消息', { turnType: 'ask', intent: 'record' });
+  cm.updateGraph('user', '测试消息', { turnType: 'ask', intent: 'record' });
   const hist = cm.getHistory();
-  equal(hist.length, 1, 'archiveContext 长度=1');
-  equal(hist[0].role, 'user', 'archiveContext role="user"');
-  equal(hist[0].content, '测试消息', 'archiveContext content 正确');
-  equal(hist[0].turnType, 'ask', 'archiveContext turnType 保留');
-  equal(hist[0].intent, 'record', 'archiveContext intent 保留');
-  ok(typeof hist[0].timestamp === 'string', 'archiveContext timestamp 存在');
+  equal(hist.length, 1, 'updateGraph 长度=1');
+  equal(hist[0].role, 'user', 'updateGraph role="user"');
+  equal(hist[0].content, '测试消息', 'updateGraph content 正确');
+  equal(hist[0].turnType, 'ask', 'updateGraph turnType 保留');
+  equal(hist[0].intent, 'record', 'updateGraph intent 保留');
+  ok(typeof hist[0].timestamp === 'string', 'updateGraph timestamp 存在');
 
   // 溢出截断
   for (let i = 0; i < 10; i++) {
-    cm.archiveContext('user', `overflow-${i}`);
+    cm.updateGraph('user', `overflow-${i}`);
   }
   const hist2 = cm.getHistory();
-  ok(hist2.length <= 5, 'archiveContext 超限截断 ≤ 5');
+  ok(hist2.length <= 5, 'updateGraph 超限截断 ≤ 5');
 
   // 无 meta
   cm.clear();
-  cm.archiveContext('assistant', '回复');
+  cm.updateGraph('assistant', '回复');
   const hist3 = cm.getHistory();
-  equal(hist3[0].turnType, null, 'archiveContext 无 meta → turnType=null');
-  equal(hist3[0].intent, null, 'archiveContext 无 meta → intent=null');
+  equal(hist3[0].turnType, null, 'updateGraph 无 meta → turnType=null');
+  equal(hist3[0].intent, null, 'updateGraph 无 meta → intent=null');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -319,9 +322,9 @@ function testContextStatsAndClear() {
   console.log('\n# ===== getHistory / stats / clear =====');
 
   const cm = new ContextManager();
-  cm.archiveContext('user', 'a');
-  cm.archiveContext('user', 'b');
-  cm.archiveContext('assistant', 'c');
+  cm.updateGraph('user', 'a');
+  cm.updateGraph('user', 'b');
+  cm.updateGraph('assistant', 'c');
 
   // getHistory(n)
   equal(cm.getHistory(2).length, 2, 'getHistory(2) → 2 条');
@@ -963,6 +966,222 @@ async function testStateMachineReset() {
   sm.enterState(State.LISTENING, { fields: { key: 'x' } });
   equal(sm.state, State.LISTENING, 'enterState → state 已切换');
   equal(sm.fields.key, 'x', 'enterState → fields 已设置');
+}
+
+// ═══════════════════════════════════════════════════════════
+// N14 Case 4: 中途偏离 E2E
+// ═══════════════════════════════════════════════════════════
+
+async function testCase4_OffTaskE2E() {
+  console.log('\n# ===== N14 Case4: 中途偏离 E2E =====');
+
+  // Step 1: 创建 ContextManager，添加正常轮次 (模拟录入对话)
+  const cm = new ContextManager();
+  cm.updateGraph('user', '记一下：午饭25块', { turnType: 'ask', intent: 'record' });
+  cm.updateGraph('assistant', '记好了，什么时候整理？', { turnType: 'reply' });
+  cm.updateGraph('user', '记一下：咖啡30块', { turnType: 'ask', intent: 'record' });
+  cm.updateGraph('assistant', '记下了', { turnType: 'reply' });
+
+  equal(cm.getHistory().length, 4, 'Case4: 正常录入 4 轮历史');
+
+  // Step 2: 注入偏离标记 "搜一下XXX"
+  const r = cm.injectOffTaskSuspicion('搜一下Python入门教程', '录入记录');
+  ok(r.suspicious, 'Case4: injectOffTaskSuspicion("搜一下...") → suspicious=true');
+  ok(r.score < 0.1, `Case4: 偏离 bigram score=${r.score} < 0.1`);
+  equal(r.count, 1, 'Case4: 偏离 count=1');
+
+  // Step 3: buildPromptContext 返回的上下文中包含偏离标记
+  const ctx = cm.buildPromptContext('record', {
+    currentInput: '搜一下Python入门教程',
+  });
+  equal(ctx.currentInput, '搜一下Python入门教程', 'Case4: buildPromptContext currentInput 保留偏离输入');
+  ok(ctx.history.length >= 2, `Case4: buildPromptContext 含 ${ctx.history.length} 条历史轮次`);
+  // 历史轮次中应包含正常录入内容
+  const histText = ctx.history.map(h => h.content).join('|');
+  contains(histText, '午饭25块', 'Case4: 上下文历史含"午饭25块"');
+  contains(histText, '咖啡30块', 'Case4: 上下文历史含"咖啡30块"');
+
+  // Step 4: getOffTaskCount 返回正确的偏离值
+  equal(cm.getOffTaskCount(), 1, 'Case4: getOffTaskCount → 1（偏离计数正确）');
+
+  // 累积偏离：再次注入低相似输入
+  cm.injectOffTaskSuspicion('今天天气怎么样', '录入记录');
+  equal(cm.getOffTaskCount(), 2, 'Case4: 二次偏离 → count=2（累积）');
+
+  // Step 5: 模拟 RECORDING 状态下用户输入偏离内容
+  // 说明：_handleRecording 不按 intent 路由，而是按字段收集逻辑处理。
+  // off-task 检测在 ContextManager.injectOffTaskSuspicion 层面完成，
+  // 调用方应在检测到偏离后组合 ContextManager + StateMachine 的结果。
+  const sm = new StateMachine({ coldStartWindow: 1 });
+  await new Promise(r => setTimeout(r, 2));
+  sm.forceTransition(State.RECORDING);
+  sm._fields = { key: '午饭', content: '', isTempKey: false };
+
+  // RECORDING 态 + 空content → ask_field（正常追问）
+  const smResult = await sm.handleInput('搜一下', {
+    intentResult: { intent: 'other', confidence: 85, extracted: {} },
+  });
+  equal(smResult.action, 'ask_field', 'Case4: RECORDING 空content → ask_field');
+  equal(smResult.askingField, 'content', 'Case4: askingField="content"');
+
+  // 同时 ContextManager 层标记偏离
+  const r2 = cm.injectOffTaskSuspicion('搜一下', '录入记录');
+  ok(r2.suspicious, 'Case4: ContextManager 检测到"搜一下"偏离（与录入不相关）');
+
+  // RECORDING 态 + 有content → collecting（追问时间）
+  sm._fields = { key: '午饭', content: '测试内容', isTempKey: false };
+  const smResult2 = await sm.handleInput('搜一下教程', {
+    intentResult: { intent: 'other', confidence: 85, extracted: { content: '搜一下教程' } },
+  });
+  equal(smResult2.action, 'collecting', 'Case4: RECORDING 有content → collecting');
+  equal(smResult2.askingField, 'time', 'Case4: askingField="time"');
+
+  // 重置 off-task 计数
+  cm.resetOffTaskSuspicion();
+  equal(cm.getOffTaskCount(), 0, 'Case4: resetOffTaskSuspicion → count=0');
+}
+
+// ═══════════════════════════════════════════════════════════
+// N14 Case 9: 修改已填字段 E2E
+// ═══════════════════════════════════════════════════════════
+
+async function testCase9_ModifyFilledFieldE2E() {
+  console.log('\n# ===== N14 Case9: 修改已填字段 E2E =====');
+
+  // Scenario A: key_invalid — Key 不含名词（纯数字/标点/过短）
+  const sm1 = new StateMachine();
+  sm1.forceTransition(State.VALIDATING);
+  sm1._fields = { key: '123', content: '正常内容', isTempKey: false };
+
+  const r1 = await sm1.handleInput('', { fields: sm1._fields });
+  equal(r1.action, 'validation_failed', 'Case9-A: key="123" → validation_failed');
+  equal(r1.error_tag, 'key_invalid', 'Case9-A: error_tag="key_invalid"');
+  equal(sm1.state, State.RECORDING, 'Case9-A: 回退到 RECORDING（追问 Key）');
+  contains(r1.reply, '具体', 'Case9-A: reply 引导重新输入（含"具体"）');
+
+  // Scenario B: key_invalid — 纯标点
+  const sm1b = new StateMachine();
+  sm1b.forceTransition(State.VALIDATING);
+  sm1b._fields = { key: '!!@@', content: '内容', isTempKey: false };
+
+  const r1b = await sm1b.handleInput('', { fields: sm1b._fields });
+  equal(r1b.error_tag, 'key_invalid', 'Case9-B: key="!!@@" → error_tag="key_invalid"');
+  equal(sm1b.state, State.RECORDING, 'Case9-B: 纯标点key → 回退 RECORDING');
+
+  // Scenario C: key_missing — Key 为空
+  const sm2 = new StateMachine();
+  sm2.forceTransition(State.VALIDATING);
+  sm2._fields = { key: '', content: '正常内容', isTempKey: false };
+
+  const r2 = await sm2.handleInput('', { fields: sm2._fields });
+  equal(r2.action, 'validation_failed', 'Case9-C: key="" → validation_failed');
+  equal(r2.error_tag, 'key_missing', 'Case9-C: error_tag="key_missing"');
+  equal(sm2.state, State.RECORDING, 'Case9-C: key_missing → 回退 RECORDING');
+  contains(r2.reply, '记的什么', 'Case9-C: reply 追问（含"记的什么"）');
+
+  // Scenario D: key_missing — Key 为 null
+  const sm2b = new StateMachine();
+  sm2b.forceTransition(State.VALIDATING);
+  sm2b._fields = { key: null, content: '内容', isTempKey: false };
+
+  const r2b = await sm2b.handleInput('', { fields: sm2b._fields });
+  equal(r2b.error_tag, 'key_missing', 'Case9-D: key=null → error_tag="key_missing"');
+  equal(sm2b.state, State.RECORDING, 'Case9-D: null key → 回退 RECORDING');
+
+  // Scenario E: isTempKey=true 时跳过 key 校验（正常通过）
+  const sm3 = new StateMachine();
+  sm3.forceTransition(State.VALIDATING);
+  sm3._fields = { key: 'abc', content: '中文内容，可以正常通过', isTempKey: true };
+
+  const r3 = await sm3.handleInput('', { fields: sm3._fields });
+  equal(r3.action, 'executing', 'Case9-E: isTempKey=true → 跳过key校验 → executing');
+  equal(sm3.state, State.EXECUTING, 'Case9-E: isTempKey=true → state=EXECUTING');
+
+  // Scenario F: 有效 Key（中文≥2字）+ isTempKey=false → 通过
+  const sm4 = new StateMachine();
+  sm4.forceTransition(State.VALIDATING);
+  sm4._fields = { key: '午饭', content: '25块', isTempKey: false };
+
+  const r4 = await sm4.handleInput('', { fields: sm4._fields });
+  equal(r4.action, 'executing', 'Case9-F: key="午饭" → 通过校验 → executing');
+  equal(sm4.state, State.EXECUTING, 'Case9-F: 有效key → state=EXECUTING');
+
+  // Scenario G: key_invalid 后调用方应回到 RECORDING 追问 Key
+  const sm5 = new StateMachine();
+  sm5.forceTransition(State.VALIDATING);
+  sm5._fields = { key: 'a', content: '测试内容', isTempKey: false };
+
+  const r5 = await sm5.handleInput('', { fields: sm5._fields });
+  equal(sm5.state, State.RECORDING, 'Case9-G: key_invalid → 调用方回 RECORDING');
+  ok(r5.data && r5.data.error_tag === 'key_invalid', 'Case9-G: data 含 error_tag="key_invalid"');
+}
+
+// ═══════════════════════════════════════════════════════════
+// N14 Case 10: 跨轮次引用 E2E
+// ═══════════════════════════════════════════════════════════
+
+function testCase10_CrossTurnReferenceE2E() {
+  console.log('\n# ===== N14 Case10: 跨轮次引用 E2E =====');
+
+  const cm = new ContextManager({ turnHistoryLimit: 20 });
+
+  // Step 1: 录入"记一下 午饭25块"
+  cm.updateGraph('user', '记一下：午饭25块', { turnType: 'ask', intent: 'record' });
+  cm.updateGraph('assistant', '记好了，这一条什么时候整理？', { turnType: 'reply' });
+
+  // 再录入一条
+  cm.updateGraph('user', '记一下：打车费45', { turnType: 'ask', intent: 'record' });
+  cm.updateGraph('assistant', '记下了', { turnType: 'reply' });
+
+  equal(cm.getHistory().length, 4, 'Case10: 录入后共 4 轮历史');
+
+  // Step 2: 后续输入"刚才那个也记上" → 上下文包含"午饭25块"
+  cm.updateGraph('user', '刚才那个也记上', { turnType: 'ask', intent: 'record' });
+
+  const ctx1 = cm.buildPromptContext('record', { currentInput: '刚才那个也记上' });
+  ok(ctx1.history.length >= 3, `Case10: buildPromptContext 含 ${ctx1.history.length} 条历史`);
+
+  // 上下文文本中应包含关键轮次"午饭25块"
+  const histText1 = ctx1.history.map(h => h.content).join(' ');
+  contains(histText1, '午饭25块', 'Case10: 上下文含"午饭25块"（跨轮次保留）');
+  contains(histText1, '打车费45', 'Case10: 上下文含"打车费45"（跨轮次保留）');
+  contains(histText1, '刚才那个也记上', 'Case10: 上下文含"刚才那个也记上"');
+
+  // Step 3: updateGraph + 追加轮次，验证 hardGate 保护（不超限时保留早期轮次）
+  // 追加 6 轮（3 user + 3 assistant），总量 5+6=11 < 20，早期轮次应保留
+  for (let i = 0; i < 3; i++) {
+    cm.updateGraph('user', `无关消息-${i}`);
+    cm.updateGraph('assistant', `自动回复-${i}`);
+  }
+
+  // getHistory 全量应保留"午饭25块"（未超出 turnHistoryLimit=20）
+  const fullHist = cm.getHistory();
+  ok(fullHist.length >= 8, `Case10: getHistory 完整历史 ≥ 8 (实际=${fullHist.length})`);
+  const fullText = fullHist.map(h => h.content).join(' ');
+
+  // "午饭25块" 仍在完整历史中
+  contains(fullText, '午饭25块', 'Case10: 完整历史保留"午饭25块"（hardGate保护）');
+  contains(fullText, '打车费45', 'Case10: 完整历史保留"打车费45"');
+  contains(fullText, '刚才那个也记上', 'Case10: 完整历史保留"刚才那个也记上"');
+
+  // Step 4: 大量填充至超限，验证溢出截断行为
+  for (let i = 0; i < 12; i++) {
+    cm.updateGraph('user', `溢出-${i}`);
+    cm.updateGraph('assistant', `回复-${i}`);
+  }
+  // 总量超 20，早期轮次被截断，但 getHistory 总量 ≤ 20
+  const overflowHist = cm.getHistory();
+  ok(overflowHist.length <= 20, `Case10: 溢出后 getHistory ≤ 20 (实际=${overflowHist.length})`);
+
+  // Step 5: record intent buildPromptContext 截断（不影响安全）
+  const ctx2 = cm.buildPromptContext('record', { currentInput: '最新查询' });
+  ok(ctx2.history.length <= 5, `Case10: record buildPromptContext 截断 ≤ 5 (实际=${ctx2.history.length})`);
+
+  // Step 6: getHistory(n) 取最近 N 轮
+  const recent3 = cm.getHistory(3);
+  equal(recent3.length, 3, 'Case10: getHistory(3) → 3 条');
+  // 最近的是末尾的自动回复
+  equal(recent3[2].role, 'assistant', 'Case10: 最近轮次是 assistant');
 }
 
 main();

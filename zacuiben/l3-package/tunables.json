@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "tunables — 杂碎本",
+  "description": "Zacuiben tunable parameters. Based on v3.0 L3 constitutions.",
+  "generalParameters": [
+    {
+      "name": "intent_confidence_direct",
+      "defaultValue": 80,
+      "valueRange": [50, 100],
+      "purpose": "意图识别直发阈值（≥此值直接分发）",
+      "consumer": "intent-recognition"
+    },
+    {
+      "name": "intent_confidence_confirm",
+      "defaultValue": 60,
+      "valueRange": [30, 80],
+      "purpose": "意图识别确认阈值（≥此值反问确认，<此值引导）",
+      "consumer": "intent-recognition",
+      "crossCheck": "intent_confidence_confirm < intent_confidence_direct"
+    },
+    {
+      "name": "content_max_length",
+      "defaultValue": 5000,
+      "valueRange": [500, 50000],
+      "purpose": "记录内容最大字数",
+      "consumer": "record-session DET"
+    },
+    {
+      "name": "attachment_max_count",
+      "defaultValue": 5,
+      "valueRange": [0, 20],
+      "purpose": "单条记录附件数量上限",
+      "consumer": "record-session DET"
+    },
+    {
+      "name": "attachment_image_max_mb",
+      "defaultValue": 10,
+      "valueRange": [1, 100],
+      "purpose": "图片附件大小上限（MB）",
+      "consumer": "record-session DET"
+    },
+    {
+      "name": "attachment_video_max_mb",
+      "defaultValue": 100,
+      "valueRange": [10, 1000],
+      "purpose": "视频附件大小上限（MB）",
+      "consumer": "record-session DET"
+    },
+    {
+      "name": "attachment_audio_max_mb",
+      "defaultValue": 50,
+      "valueRange": [1, 500],
+      "purpose": "音频附件大小上限（MB）",
+      "consumer": "record-session DET"
+    },
+    {
+      "name": "organize_default_days",
+      "defaultValue": 7,
+      "valueRange": [1, 90],
+      "purpose": "整理时间默认天数（无明确时间时）",
+      "consumer": "record-session DET"
+    },
+    {
+      "name": "organize_skip_auto_discard",
+      "defaultValue": 3,
+      "valueRange": [1, 10],
+      "purpose": "连续跳过次数≥此值自动废弃",
+      "consumer": "organize-session DET"
+    },
+    {
+      "name": "search_timeout_seconds",
+      "defaultValue": 10,
+      "valueRange": [3, 60],
+      "purpose": "搜索确认超时（秒）",
+      "consumer": "search-session"
+    },
+    {
+      "name": "turnHistory_limit",
+      "defaultValue": 20,
+      "valueRange": [5, 100],
+      "purpose": "会话轮次历史保留上限",
+      "consumer": "context-manager"
+    },
+    {
+      "name": "pending_fields_ttl",
+      "defaultValue": 86400,
+      "valueRange": [3600, 604800],
+      "purpose": "偏离时暂存半成品字段的保留时长（秒）",
+      "consumer": "session-store"
+    }
+  ],
+  "conflictRules": {
+    "defaultViolationAction": {
+      "single_param": "hard_reject",
+      "cross_param": "warning"
+    },
+    "single_param": [
+      {
+        "name": "intent_confidence_range",
+        "check": "intent_confidence_direct > intent_confidence_confirm"
+      }
+    ],
+    "cross_param": [
+      {
+        "name": "attachment_total_budget",
+        "violation_action": "warning",
+        "params": ["attachment_max_count", "attachment_image_max_mb", "attachment_video_max_mb", "attachment_audio_max_mb"],
+        "description": "总附件存储量 = 图片×10 + 视频×100 + 音频×50 ≤ 2000MB"
+      }
+    ]
+  }
+}
