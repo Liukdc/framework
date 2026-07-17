@@ -14,6 +14,8 @@
 
 State-Control (态控, Tàikòng) is a **deterministic context-management methodology** for LLM-based agent systems. It shifts the "what-to-inject-into-context" decision from the LLM's internal reasoning to an external, auditable state machine — reducing token waste, preventing hallucination from context pollution, and providing a complete audit trail.
 
+**The Secretary Metaphor:** State-Control is the LLM's executive secretary. The secretary doesn't make the boss's decisions — but decides which documents land on the desk first, which calls get through, which meetings go on the calendar. And critically: the secretary has autonomous authority over security — screening visitors (degradation chain), blocking spam calls (M1 exact-match routing), and following the fire manual without asking (hardcoded fallback). **The more expensive the boss's time, the more money the secretary saves — not by being smarter, but by ensuring the boss only spends time on things that matter.**
+
 ### Core Innovation
 
 Most agent frameworks (LangGraph, CrewAI, Coze, Dify) focus on making LLMs *smarter* through better prompts, tool orchestration, or multi-agent coordination. State-Control inverts the problem: **don't optimize what goes in — eliminate what shouldn't.**
@@ -86,6 +88,10 @@ This work is covered by a pending patent application for AI agent scheduling met
 ### 态控是什么
 
 态控（态控架构，State-Control Architecture）是一套**确定性的 LLM agent 上下文管理方法论**。核心思想：把"喂给 LLM 什么上下文"这件事，从 LLM 内部的黑箱推理变成外部可审计的确定性状态机。每一条注入上下文的记忆、规则、历史，都有可追溯的理由。
+
+**一句话理解：态控架构就是模型的秘书。**
+
+秘书不替老板做决策，但秘书决定：什么文件先放到桌上、什么电话先接、什么会议排几点。而且，秘书有老板也绕不开的自主权限——安检来访者（降级链）、拦推销电话（M1 口令层）、火灾时按消防手册处理不请示（硬编码兜底）。**老板的时间越贵，秘书省的钱越多——不是因为秘书更聪明，是因为老板的时间不能花在不值得的事上。**
 
 ### 态控解决了什么问题
 
