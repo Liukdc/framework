@@ -74,7 +74,7 @@ This work is covered by a pending patent application for AI agent scheduling met
   title   = {State-Control Architecture: Deterministic Context Management for LLM Agent Systems},
   author  = {Jinsong Liu},
   year    = {2026},
-  url     = {https://github.com/Liukdc/state-control}
+  url     = {https://github.com/Liukdc/framework}
 }
 ```
 
