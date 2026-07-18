@@ -5,6 +5,8 @@
 
 [English](#english) | [中文](#chinese)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21435111.svg)](https://doi.org/10.5281/zenodo.21435111)
+
 ---
 
 <a id="english"></a>
