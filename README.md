@@ -43,7 +43,7 @@ Two complete products built on State-Control, from L2 design documents through L
 
 | Product | Version | Description | Lines |
 |---------|---------|-------------|-------|
-| `fugui-xiaoan/` | v4.0 | Smart accounting assistant — NLU-intent routing → 7 session constitutions → runtime state machine with 5-stage degradation chain | 8,500+ |
+| `fugui-xiaoan/` | v4.0 | Smart accounting assistant — NLU-intent routing → 7 session constitutions → runtime state machine with 4-stage degradation chain | 8,500+ |
 | `zacuiben/` | v2.1 | Sundries-book — lightweight text fragment manager with protector/scheduler/storage quad-set | 3,200+ |
 
 Both include: L2 flow documents, L3 constitutions, context-manager implementations, turnType schemas, tunable parameters, unit + integration tests, and Capacitor hybrid-app builds.
@@ -124,7 +124,7 @@ This work is covered by a pending patent application for AI agent scheduling met
 | topicEvolution 分层留存 | TopicEvolution | 跨会话记忆按"信息净价值"衰减——major 永久保留，minor 超阈值压缩，invalid 归档 |
 | 四层宪法 | Constitution Layers | 根宪法（不可变）→ 公共规则 → 环节宪法 → 运行时，逐层约束 |
 | @importance 三层 | @importance | critical / high / normal / low — 有限的 token 预算按信息价值分配 |
-| 五项降级链 | Degradation Chain | L1 结构 → DET 值域 → confidence → 跨任务延伸 → 硬编码兜底 |
+| 四项降级链 | Degradation Chain | L1 结构校验 → DET 值域复验 → logprobs 置信度 → 硬编码兜底 |
 | cross_param | cross_param | 5 条跨参数语义依赖规则，防止参数配置冲突 |
 | 契约传递 | Contract Inheritance | 节点间字段级信息传递，防止上下文膨胀 |
 
@@ -146,7 +146,7 @@ This work is covered by a pending patent application for AI agent scheduling met
 
 | 产品 | 版本 | 说明 | 规模 |
 |------|------|------|------|
-| `fugui-xiaoan/` 富贵小安 | v4.0 | 智能记账助手 — NLU 意图路由→7 份 session 宪法→状态机 runtime，含五项降级链完整实现 | 8,500+ 行 |
+| `fugui-xiaoan/` 富贵小安 | v4.0 | 智能记账助手 — NLU 意图路由→7 份 session 宪法→状态机 runtime，含四项降级链完整实现 | 8,500+ 行 |
 | `zacuiben/` 杂碎本 | v2.1 | 轻量文本片段管理器 — protector/scheduler/storage 四件套 | 3,200+ 行 |
 
 两者均包含：L2 流程文档、L3 宪法、context-manager 实现、turnType schema、tunable 参数、单元+集成测试、Capacitor 混合 App 产物。
