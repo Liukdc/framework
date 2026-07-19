@@ -48,6 +48,17 @@ Two complete products built on State-Control, from L2 design documents through L
 
 Both include: L2 flow documents, L3 constitutions, context-manager implementations, turnType schemas, tunable parameters, unit + integration tests, and Capacitor hybrid-app builds.
 
+**Tools (6, in design phase)**
+
+| Tool | Description |
+|------|-------------|
+| `tools/big-ears/` | Non-intrusive voice input — wake-word routing + compound stop protocol |
+| `tools/proofreader/` | Input pre-calibration — dual-dimension voice+logic verification before LLM |
+| `tools/whiteboard/` | Process-isolated canvas — local edits at 0 token cost, AI replace with conflict resolution |
+| `tools/comparison-mirror/` | Modification quality gate — forced diff verdict before overwriting confirmed content |
+| `tools/xiaoshan/` | Micro text editor — wake-word + tap positioning + semantic unit boundary detection |
+| `tools/screen-officer/` | Non-intrusive reading — multi-source pure-voice explanation with forced screen lock |
+
 ### Key Mechanisms
 
 - **TaskType Duality**: `field_based` (discrete field collection, DET-verifiable) vs `topic_based` (continuous semantic exploration, embedding-guarded)
@@ -125,6 +136,7 @@ This work is covered by a pending patent application for AI agent scheduling met
 | 四层宪法 | Constitution Layers | 根宪法（不可变）→ 公共规则 → 环节宪法 → 运行时，逐层约束 |
 | @importance 三层 | @importance | critical / high / normal / low — 有限的 token 预算按信息价值分配 |
 | 四项降级链 | Degradation Chain | L1 结构校验 → DET 值域复验 → logprobs 置信度 → 硬编码兜底 |
+| 工具分层发现 | Tool Discovery | 必用工具（常驻）+ 工具清单（轻量目录）+ 选用工具（按需加载），Two-Phase Selection |
 | cross_param | cross_param | 5 条跨参数语义依赖规则，防止参数配置冲突 |
 | 契约传递 | Contract Inheritance | 节点间字段级信息传递，防止上下文膨胀 |
 
