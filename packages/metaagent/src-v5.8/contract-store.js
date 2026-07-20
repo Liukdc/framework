@@ -147,6 +147,13 @@ export class ContractStore {
     return this._db.prepare(`SELECT * FROM outputs WHERE session_id=? ORDER BY written_at DESC`).all(sessionId);
   }
 
+  // === S3 roomStateIndex ===
+
+  appendSegmentBoundary(sessionId, prevIntent) {
+    const now = Date.now();
+    this._db.prepare(`INSERT INTO conversation_log (session_id, turn_index, role, content, turn_type, created_at) VALUES (?, -1, 'system', ?, 'segment_cut', ?)`).run(sessionId, `[S3_CUT] prevIntent=${prevIntent}`, now);
+  }
+
   // === Conversation Log ===
 
   appendConversation(sessionId, turnIndex, role, content, turnType) {

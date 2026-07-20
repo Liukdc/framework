@@ -37,8 +37,8 @@ export class L2L3Validator {
     const transitions = load('transitions.json');
     results.push({
       check: 'transition-count',
-      pass: transitions.length === 22,  // 原20 + switch + cancel + WAITING_CONFIRM 细分
-      detail: `transitions=${transitions.length}, expected=22`,
+      pass: transitions.length === 20,  // 18 + N11/N12 独立两条
+      detail: `transitions=${transitions.length}, expected=20`,
     });
 
     // 4. 路由表覆盖

@@ -102,9 +102,19 @@ export class Scheduler {
       const tools = this._tools.getToolDefinitions(intent);
       const modelOverride = this._rt.getSecondLayerOverride(intent);
 
-      const inSessionResult = await this._adapter.callInSession(systemPrompt, [
-        { role: 'user', content: userInput },
-      ], tools, modelOverride || undefined);
+      // N2特殊：双角色串行+信息隔离
+      if (intent === 'N2') {
+        inSessionResult = await this._runN2DualRole(systemPrompt, userInput, trace);
+      } else if (intent === 'N13') {
+        // N13特殊：代码专项模型
+        inSessionResult = await this._adapter.callCodeModel(systemPrompt, [
+          { role: 'user', content: userInput },
+        ]);
+      } else {
+        inSessionResult = await this._adapter.callInSession(systemPrompt, [
+          { role: 'user', content: userInput },
+        ], tools, modelOverride || undefined);
+      }
 
       const parsed = this._adapter.parseInSessionResult(inSessionResult);
       this._telemetry.logEvent(trace, 'in_session_done', { turnType: parsed.turnType });
@@ -211,11 +221,12 @@ export class Scheduler {
         return { state: STATES.LISTENING, turnType: 'reply', content: '当前操作已取消。' };
       }
       case 'switch': {
-        // S3: KV Cache 释放 + roomStateIndex 注入
+        // S3四步：① 标记当前房间产出物边界 ② KV Cache释放 ③ roomStateIndex注入 ④ ANALYZING重新识别
+        await this._store.appendSegmentBoundary(this._sessionId, this._sm.currentIntent);
         this._sm.transition(STATES.ANALYZING);
         await this._store.updateSessionState(this._sessionId, STATES.ANALYZING);
-        this._telemetry.logEvent(trace, 's3_switch');
-        return { state: STATES.ANALYZING, turnType: 'reply', content: '房间已切换，请选择新的节点。' };
+        this._telemetry.logEvent(trace, 's3_switch', { roomStateIndex: this._sm.intentList });
+        return { state: STATES.ANALYZING, turnType: 'reply', content: '房间已切换，请选择新的节点（P0/N1~N15）。' };
       }
       default:
         return null;
@@ -252,6 +263,45 @@ export class Scheduler {
       _n2Role1Output: this._n2Role1Output,
     };
     return this._tools.execute(name, args, ctx);
+  }
+
+  // === N2 双角色串行+信息隔离 ===
+  async _runN2DualRole(systemPrompt, userInput, trace) {
+    this._telemetry.logEvent(trace, 'n2_dual_role_start');
+
+    // 角色一：只注场景定义（systemPrompt中已含N1环节宪法）
+    const role1Result = await this._adapter.callInSession(
+      `${systemPrompt}
+
+[角色一] 你只负责生成边界紧张度测试语料。基于N1定义的场景和意图清单，生成20-30条边界语料。每条语料应测试意图边界的不同维度。`,
+      [{ role: 'user', content: userInput }],
+      [],
+      null
+    );
+    const role1Parsed = this._adapter.parseInSessionResult(role1Result);
+    this._n2Role1Output = role1Parsed.content;
+    this._telemetry.logEvent(trace, 'n2_role1_done', { length: role1Parsed.content.length });
+
+    // 角色二：注角色一输出+N1边界，信息隔离
+    const role2Result = await this._adapter.callInSession(
+      `[角色二] 你负责审查角色一生成的语料。
+
+审查标准：
+1. 每条语料是否在N1定义的意图边界内？
+2. 是否覆盖了所有意图的边界情况？
+3. 语料是否有歧义或无法判定？
+
+角色一输出：
+${role1Parsed.content.slice(0, 4096)}
+
+请逐条审查，标注通过/边界模糊/越界/缺失维度。最后给出综合评定。`,
+      [{ role: 'user', content: '请审查以上语料。' }],
+      [],
+      null
+    );
+
+    this._telemetry.logEvent(trace, 'n2_dual_role_done');
+    return role2Result;
   }
 
   // === DET 校验 ===
