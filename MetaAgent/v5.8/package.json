@@ -15,7 +15,20 @@
     "./createAgent": "./src-v5.8/index.js"
   },
   "files": [
-    "src-v5.8/",
+    "src-v5.8/index.js",
+    "src-v5.8/scheduler.js",
+    "src-v5.8/state-machine.js",
+    "src-v5.8/route-table.js",
+    "src-v5.8/context-manager.js",
+    "src-v5.8/deepseek-adapter.js",
+    "src-v5.8/tool-registry.js",
+    "src-v5.8/tunables.js",
+    "src-v5.8/contract-store.js",
+    "src-v5.8/telemetry.js",
+    "src-v5.8/outputs-manager.js",
+    "src-v5.8/l2-l3-validator.js",
+    "src-v5.8/constitutions/loader.js",
+    "src-v5.8/generate-l3.js",
     "l3-v5.8/",
     "constitutions/",
     "README.md"
