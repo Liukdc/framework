@@ -145,8 +145,8 @@ export class StateMachine {
   _matchFrom(actual, pattern) {
     if (actual === pattern) return true;
     if (pattern.startsWith('IN_SESSION(') && actual.startsWith('IN_SESSION(')) {
-      const pType = pattern.match(/IN_SESSION\((\w+)/)?.[1];
-      const aIntent = actual.match(/IN_SESSION\((\w+)/)?.[1];
+      const pType = pattern.match(/IN_SESSION\(([\w-]+)/)?.[1];
+      const aIntent = actual.match(/IN_SESSION\(([\w-]+)/)?.[1];
       if (pType && aIntent) {
         const aTaskType = this.getTaskType(aIntent);
         if (pType === 'topic' && aTaskType === 'topic_based') return true;

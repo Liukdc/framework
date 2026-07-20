@@ -19,6 +19,7 @@
     {"intent":"N13","taskType":"topic_based","topicEvolutionEnabled":true,"modelBinding":"代码专项模型"},
     {"intent":"N14","taskType":"topic_based","topicEvolutionEnabled":true},
     {"intent":"N15","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"domain-rule-session","taskType":"topic_based","topicEvolutionEnabled":true},
     {"intent":"other","taskType":"topic_based","topicEvolutionEnabled":true}
   ],
   "notDoList": [

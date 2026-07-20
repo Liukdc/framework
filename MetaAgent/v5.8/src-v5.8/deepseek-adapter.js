@@ -173,6 +173,7 @@ export class DeepSeekAdapter {
       N13: '骨架代码生成',
       N14: '审骨架',
       N15: '调参交付',
+      'domain-rule-session': '领域规则讨论——确认/修改/仲裁/废弃规则',
       other: '无法归类或元指令',
     };
     return map[intent] || intent;
