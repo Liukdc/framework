@@ -20,11 +20,11 @@ import { loadAllConstitutions, getConstitutionForIntent } from './constitutions/
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-/** 默认 L3 配置路径 */
-const DEFAULT_L3_PATH = join(__dirname, '..', '..', '..', 'MetaAgent', 'docs', 'l3-v5.8');
+/** 默认 L3 配置路径（整合到项目内） */
+const DEFAULT_L3_PATH = join(__dirname, '..', 'l3-v5.8');
 
 /** 默认数据库路径 */
-const DEFAULT_DB_PATH = join(__dirname, '..', '..', '..', 'MetaAgent', 'data', 'metaagent.db');
+const DEFAULT_DB_PATH = join(__dirname, '..', 'data', 'metaagent.db');
 
 export class MetaAgent {
   /**

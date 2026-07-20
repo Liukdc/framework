@@ -19,10 +19,9 @@
     "N15": "N15_环节宪法_v1.2.md",
     "domain-rule-session": "domain-rule-session_环节宪法_v5.8.md"
   },
-  "_loadPathNote": "以下路径均为 l3Path 的相对路径。l3Path=MetaAgent/docs/l3-v5.8/",
+  "_loadPathNote": "整合后宪法文件在项目 constitutions/ 下。l3Path=packages/metaagent/l3-v5.8/",
   "loadPaths": [
-    "..",
-    "../../../态控架构/节点说明"
+    "../constitutions"
   ],
   "constitutionCount": 17,
   "n2Role2Constitution": "N2_角色二宪法_v3.6.md"
