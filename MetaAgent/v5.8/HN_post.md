@@ -45,10 +45,6 @@ await agent.startSession('demo');
 const r = await agent.sendMessage('Design an accounting assistant for me');
 ```
 
-**Tests:** 65+ unit and integration tests covering state machine, route table, context manager, and degradation chain.
+**Tests:** Full test coverage on state machine, route table, context manager, and degradation chain. [Architecture docs](https://liukdc.github.io/framework) · [Repo](https://github.com/Liukdc/framework/tree/main/MetaAgent/v5.8)
 
-**Repo:** https://github.com/Liukdc/framework/tree/main/MetaAgent/v5.8
-
-This is the result of iteration across a pending patent, research on LLM agent design, and real-world testing.
-
-If you've hit context bloat, hallucination from memory pollution, or untraceable agent decisions in production — I'd love to hear how this approach holds up against what you've tried. The full architecture docs are at https://liukdc.github.io/framework.
+This is the result of iteration across a pending patent and real-world testing. If you've hit context bloat or untraceable agent decisions in production — I'd love to hear how this holds up against what you've tried.
