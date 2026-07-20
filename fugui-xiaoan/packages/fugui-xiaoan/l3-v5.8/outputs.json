@@ -1,0 +1,1 @@
+{"critical":[{"intent":"record","outputName":"expense-record","outputType":"field_based"}],"high":[{"intent":"query","outputName":"query-result","outputType":"topic_based"}],"normal":[{"intent":"delete"},{"intent":"compare"},{"intent":"other"}]}

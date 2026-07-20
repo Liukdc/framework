@@ -1,0 +1,1 @@
+[{"from":"ANALYZING","trigger":["intent"],"to":"IN_SESSION"},{"from":"IN_SESSION","trigger":["turnType=complete","turnType=giveup"],"to":"LISTENING"},{"from":"IN_SESSION","trigger":["turnType=off-task"],"to":"ANALYZING"}]
