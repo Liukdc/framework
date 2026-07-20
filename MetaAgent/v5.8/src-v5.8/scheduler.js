@@ -106,42 +106,55 @@ export class Scheduler {
         this._topicId = `${intent}-${Date.now()}`;
       }
 
-      // ═══ Layer 2: IN_SESSION - 三层注入 + tool calling ═══
+      // ═══ Layer 2: IN_SESSION - 三层注入 + tool calling 循环 ═══
       const contextParts = await this._cm.buildContext(this._sessionId, STATES.IN_SESSION, intent, []);
       const systemPrompt = contextParts.join('\n\n---\n\n');
 
       const tools = this._tools.getToolDefinitions(intent);
       const modelOverride = this._rt.getSecondLayerOverride(intent);
 
-      // N2特殊：双角色串行+信息隔离
-      let inSessionResult;
-      if (intent === 'N2') {
-        inSessionResult = await this._runN2DualRole(systemPrompt, userInput, trace);
-      } else if (intent === 'N13') {
-        // N13特殊：代码专项模型 + tools（需 writeOutput 落盘）
-        inSessionResult = await this._adapter.callCodeModel(systemPrompt, [
-          { role: 'user', content: userInput },
-        ], tools);
-      } else {
-        inSessionResult = await this._adapter.callInSession(systemPrompt, [
-          { role: 'user', content: userInput },
-        ], tools, modelOverride || undefined);
-      }
+      const conversationMessages = [{ role: 'user', content: userInput }];
+      let parsed;
+      const MAX_TOOL_ROUNDS = 3;
 
-      const parsed = this._adapter.parseInSessionResult(inSessionResult);
-      this._telemetry.logEvent(trace, 'in_session_done', { turnType: parsed.turnType });
+      for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+        let rawResult;
+        if (intent === 'N2') {
+          rawResult = await this._runN2DualRole(systemPrompt, userInput, trace);
+          parsed = this._adapter.parseInSessionResult(rawResult);
+          break;  // N2 双角色不走 tool calling 循环
+        } else if (intent === 'N13') {
+          rawResult = await this._adapter.callCodeModel(systemPrompt, conversationMessages, tools);
+        } else {
+          rawResult = await this._adapter.callInSession(systemPrompt, conversationMessages, tools, modelOverride || undefined);
+        }
+        parsed = this._adapter.parseInSessionResult(rawResult);
 
-      // 如果 LLM 调用了工具，执行工具
-      if (parsed.toolCalls.length > 0) {
+        // 无工具调用 → 模型已完成回答
+        if (parsed.toolCalls.length === 0) break;
+
+        // 执行工具并将结果追加到对话
+        conversationMessages.push({ role: 'assistant', content: parsed.content || '', tool_calls: parsed.toolCalls });
         for (const tc of parsed.toolCalls) {
           try {
-            const toolResult = await this._executeTool(tc.function.name, JSON.parse(tc.function.arguments));
-            this._telemetry.logEvent(trace, 'tool_called', { tool: tc.function.name });
+            const toolResult = await this._executeTool(tc.function.name, JSON.parse(tc.function.arguments || '{}'));
+            this._telemetry.logEvent(trace, 'tool_called', { tool: tc.function.name, round });
+            conversationMessages.push({
+              role: 'tool',
+              tool_call_id: tc.id,
+              content: JSON.stringify(toolResult),
+            });
           } catch (err) {
             this._telemetry.logEvent(trace, 'tool_error', { tool: tc.function.name, error: err.message });
+            conversationMessages.push({
+              role: 'tool',
+              tool_call_id: tc.id,
+              content: JSON.stringify({ error: err.message }),
+            });
           }
         }
       }
+      this._telemetry.logEvent(trace, 'in_session_done', { turnType: parsed.turnType });
 
       // 记录对话日志（每轮 user + assistant 各占一个整数 turnIndex）
       await this._store.appendConversation(this._sessionId, this._turnIndex, 'user', userInput, parsed.turnType);

@@ -35,7 +35,7 @@ export class DeepSeekAdapter {
         { role: 'user', content: userInput },
       ],
       temperature: getTunable(this._tunables, 'temperatureAnalyzing'),
-      max_tokens: 5,
+      max_tokens: 128,          // v4: reasoning 消耗 token，需留足余量
       logprobs: true,
       top_logprobs: 5,
     };
@@ -44,6 +44,13 @@ export class DeepSeekAdapter {
   /** 调用 DeepSeek API */
   async _call(params) {
     const url = `${DEEPSEEK_BASE_URL}/chat/completions`;
+
+    // DEBUG: 检查 tools 参数传递
+    const hasTools = params.tools?.length > 0;
+    if (hasTools && process.env.DEBUG_TOOLS) {
+      console.error('[DEBUG TOOLS] sending', params.tools.length, 'tools:', params.tools.map(t => t.function.name).join(', '));
+    }
+
     const resp = await fetch(url, {
       method: 'POST',
       headers: {
@@ -56,7 +63,15 @@ export class DeepSeekAdapter {
       const err = await resp.text();
       throw new Error(`DeepSeek API 错误 ${resp.status}: ${err.slice(0, 200)}`);
     }
-    return resp.json();
+    const result = await resp.json();
+
+    if (hasTools && process.env.DEBUG_TOOLS) {
+      const tc = result.choices?.[0]?.message?.tool_calls;
+      console.error('[DEBUG TOOLS] response tool_calls:', tc ? JSON.stringify(tc).slice(0, 300) : 'NONE');
+      console.error('[DEBUG TOOLS] response content:', result.choices?.[0]?.message?.content?.slice(0, 100));
+    }
+
+    return result;
   }
 
   /** 解析 ANALYZING 结果：提取字母 + logprobs */

@@ -1,5 +1,5 @@
 {
-  "_comment": "v5.8 P0修复: 16 份宪法独立映射，消除合并加载违反环节隔离的问题。宪法文件与 L3 包同目录（MetaAgent/v5.8/）。",
+  "_comment": "v5.8 P0修复: 16 份宪法独立映射，消除合并加载违反环节隔离的问题",
   "constitutionFiles": {
     "P0":  "P0_环节宪法_v5.8.md",
     "N1":  "N1_环节宪法_v8.7.md",
@@ -18,7 +18,11 @@
     "N14": "N14_环节宪法_v1.2.md",
     "N15": "N15_环节宪法_v1.2.md"
   },
-  "loadPaths": [".."],
+  "_loadPathNote": "以下路径均为 l3Path 的相对路径。l3Path=MetaAgent/docs/l3-v5.8/",
+  "loadPaths": [
+    "..",
+    "../../../态控架构/节点说明"
+  ],
   "constitutionCount": 16,
   "n2Role2Constitution": "N2_角色二宪法_v3.6.md"
 }

@@ -1,8 +1,6 @@
 // @MetaAgent v5.8 — telemetry.js
 // OpenTelemetry 追踪：trace 链、metric 计数、审计事件
 
-export class Telemetry {
-  constructor() {
 const MAX_TRACES = 1000;
 
 export class Telemetry {
@@ -80,6 +78,3 @@ export class Telemetry {
     return this._traces.slice(-n);
   }
 }
-
-// 单例
-export const telemetry = new Telemetry();

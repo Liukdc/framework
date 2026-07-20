@@ -176,34 +176,98 @@ export class MetaAgent {
   }
 }
 
-// === CLI 模式：node index.js "用户输入" ===
+// === CLI 模式 ===
 async function cli() {
   const args = process.argv.slice(2);
-  if (args.length === 0) {
-    console.log('用法: node index.js "用户输入"');
-    console.log('示例: node index.js "帮我设计一个记账智能体"');
-    process.exit(0);
+
+  // 单轮模式: node index.js "用户输入"
+  if (args.length > 0) {
+    await singleTurn(args[0]);
+    return;
   }
+
+  // 交互模式: node index.js（无参数）
+  await interactiveMode();
+}
+
+/** 单轮对话 */
+async function singleTurn(input) {
+  const meta = new MetaAgent();
+  await meta.init();
+  console.log('[MetaAgent v5.8 CLI]');
+
+  const initResp = await meta.startSession('cli-session');
+  console.log(`[${initResp.state}] ${initResp.message}`);
+
+  const resp = await meta.sendMessage(input);
+  console.log(`\n[${resp.state}] intent=${resp.intent} prob=${resp.probability?.toFixed(3)}`);
+  console.log(`[${resp.turnType}] ${resp.content?.slice(0, 500)}`);
+
+  console.log('\n--- metrics ---');
+  console.log(JSON.stringify(meta.getMetrics(), null, 2));
+  await meta.destroy();
+}
+
+/** 多轮交互模式 */
+async function interactiveMode() {
+  const readline = await import('node:readline');
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: '\n> ',
+  });
 
   const meta = new MetaAgent();
   await meta.init();
 
-  console.log('[MetaAgent v5.8 CLI]');
+  const sessionId = `interactive-${Date.now()}`;
+  const initResp = await meta.startSession(sessionId);
 
-  // 启动会话
-  const initResp = await meta.startSession('cli-session');
-  console.log(`[${initResp.state}] ${initResp.message}`);
+  console.log('══════════════════════════════════════════');
+  console.log('  MetaAgent v5.8 — 交互模式');
+  console.log('  命令: /exit 退出 | /state 查看状态 | /metrics 查看指标');
+  console.log('══════════════════════════════════════════');
+  console.log(`\n[${initResp.state}] ${initResp.message}`);
+  rl.prompt();
 
-  // 发送消息
-  const resp = await meta.sendMessage(args[0]);
-  console.log(`\n[${resp.state}] intent=${resp.intent} prob=${resp.probability?.toFixed(3)}`);
-  console.log(`[${resp.turnType}] ${resp.content?.slice(0, 500)}`);
+  rl.on('line', async (line) => {
+    const input = line.trim();
+    if (!input) { rl.prompt(); return; }
 
-  // 输出指标
-  console.log('\n--- metrics ---');
-  console.log(JSON.stringify(meta.getMetrics(), null, 2));
+    if (input === '/exit') {
+      console.log('会话结束。');
+      rl.close();
+      return;
+    }
 
-  await meta.destroy();
+    if (input === '/state') {
+      console.log(`  状态: ${meta.fullState} | intent: ${meta.currentIntent || 'none'}`);
+      rl.prompt();
+      return;
+    }
+
+    if (input === '/metrics') {
+      console.log('  metrics:', JSON.stringify(meta.getMetrics(), null, 2));
+      rl.prompt();
+      return;
+    }
+
+    try {
+      const resp = await meta.sendMessage(input);
+      console.log(`\n━━━ [${resp.state}] intent=${resp.intent} prob=${resp.probability?.toFixed(3)} turnType=${resp.turnType} ━━━`);
+      console.log(resp.content);
+    } catch (err) {
+      console.error(`\n❌ 错误: ${err.message}`);
+    }
+    rl.prompt();
+  });
+
+  rl.on('close', async () => {
+    console.log('\n--- metrics ---');
+    console.log(JSON.stringify(meta.getMetrics(), null, 2));
+    await meta.destroy();
+    process.exit(0);
+  });
 }
 
 // 仅当直接运行时启用 CLI

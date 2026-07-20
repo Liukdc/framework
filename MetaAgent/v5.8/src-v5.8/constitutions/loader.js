@@ -16,21 +16,23 @@ export function loadConstitutionIndex(l3Path) {
 export function loadAllConstitutions(l3Path) {
   const index = loadConstitutionIndex(l3Path);
   const result = {};
-  const loadPaths = index.loadPaths || [join(l3Path, '..')];
+  // loadPaths 是相对 l3Path 的路径，解析为绝对路径
+  const rawPaths = index.loadPaths || ['..'];
+  const resolvedPaths = rawPaths.map(p => join(l3Path, p));
 
   for (const [intent, filename] of Object.entries(index.constitutionFiles)) {
-    let text = _findAndRead(loadPaths, filename);
+    let text = _findAndRead(resolvedPaths, filename);
 
     // N2 特殊：加载角色二宪法
     if (intent === 'N2' && index.n2Role2Constitution) {
-      const role2Text = _findAndRead(loadPaths, index.n2Role2Constitution);
+      const role2Text = _findAndRead(resolvedPaths, index.n2Role2Constitution);
       text = (text || '') + (role2Text ? '\n\n---\n\n' + role2Text : '');
     }
 
     if (text) {
       result[intent] = text;
     } else {
-      console.warn(`[constitution-loader] 未找到宪法: ${intent} → ${filename} (搜索路径: ${loadPaths.join(', ')})`);
+      console.warn(`[constitution-loader] 未找到宪法: ${intent} → ${filename} (搜索路径: ${resolvedPaths.join(', ')})`);
       result[intent] = '';
     }
   }

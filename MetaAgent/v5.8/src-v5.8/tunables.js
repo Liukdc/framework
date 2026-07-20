@@ -3,9 +3,9 @@
 
 export const TUNABLE_META = {
   // === General (16) ===
-  analyzingModel:        { type: 'enum',   values: ['deepseek-v3', 'deepseek-r1', 'deepseek-v4'], default: 'deepseek-v3' },
-  inSessionModel:        { type: 'enum',   values: ['deepseek-v3', 'deepseek-r1', 'deepseek-v4'], default: 'deepseek-v3' },
-  codeModel:             { type: 'enum',   values: ['deepseek-coder', 'gpt-4o'],                  default: 'deepseek-coder' },
+  analyzingModel:        { type: 'enum',   values: ['deepseek-v4-pro', 'deepseek-v4-flash'], default: 'deepseek-v4-pro' },
+  inSessionModel:        { type: 'enum',   values: ['deepseek-v4-pro', 'deepseek-v4-flash'], default: 'deepseek-v4-pro' },
+  codeModel:             { type: 'enum',   values: ['deepseek-v4-pro'],                    default: 'deepseek-v4-pro' },
   maxContextTokens:      { type: 'range',  min: 4096, max: 128000, default: 64000 },
   maxTurnsPerSession:    { type: 'range',  min: 5,    max: 200,    default: 50 },
   logprobsThreshold:     { type: 'range',  min: 0.3,  max: 0.95,   default: 0.6 },   // ANALYZING 放行阈值

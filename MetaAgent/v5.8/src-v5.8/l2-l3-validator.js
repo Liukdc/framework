@@ -14,6 +14,8 @@ export class L2L3Validator {
     const load = (name) => JSON.parse(readFileSync(join(this._l3Path, name), 'utf-8'));
 
     // 1. intent 数量一致性：boundary.doList 与 states.inSessionSubtypes 对齐
+    const boundary = load('boundary.json');
+    const states = load('states.json');
     const doCount = boundary.doList.length;
     const subCount = states.inSessionSubtypes.length;
     results.push({
@@ -40,12 +42,12 @@ export class L2L3Validator {
       detail: `transitions=${transitions.length} (最小8)`,
     });
 
-    // 4. 路由表覆盖
+    // 4. 路由表覆盖（最少 8 条覆盖 8 个稳态转换出口）
     const rt = load('routeTable.json');
     results.push({
       check: 'route-count',
-      pass: rt.routes.length >= subCount,
-      detail: `routes=${rt.routes.length}, subtypes=${subCount}`,
+      pass: rt.routes.length >= 8,
+      detail: `routes=${rt.routes.length} (最小8)`,
     });
 
     // 5. importance 标记（关键产出物至少 2 个）
