@@ -177,6 +177,19 @@ export class Scheduler {
         return { state: this._sm.fullState, turnType: 'validation_failed', content: detResult.message };
       }
 
+      // ═══ v5.8 强制落盘：模型漏调 writeOutput 时调度器兜底 ═══
+      if (parsed.content && parsed.content.length > 10 && parsed.toolCalls.length === 0) {
+        const alreadyWritten = await this._store.getOutputs(this._sessionId);
+        const thisTurnWritten = alreadyWritten.some(o => o.intent === intent && o.written_at > Date.now() - 60000);
+        if (!thisTurnWritten) {
+          await this._store.writeOutput(
+            this._sessionId, intent,
+            `L2-${intent}-v5.8`, this._outputs.importanceOf(intent), parsed.content
+          );
+          this._telemetry.inc('criticalOutputsWritten');
+        }
+      }
+
       // ═══ 路由 ═══
       // turnType 为 null 且模型已产出内容 → 默认 reply（等待后续输入）
       const effectiveTurnType = parsed.turnType || (parsed.content?.length > 10 ? 'reply' : null);
