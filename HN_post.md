@@ -1,40 +1,50 @@
-# We Built a Deterministic Agent Runtime That Works Without an API Key
+# Show HN: State-Control — a deterministic context manager for LLM agents (not another prompt hack)
 
-Every LLM agent framework I've seen optimizes the same thing: *what to feed the model*. Better prompts, richer tool orchestration, multi-agent coordination. All chase smarter context.
+Every LLM agent framework optimizes the same thing: *what to feed the model*. Better prompts, richer tool orchestration, multi-agent coordination. All chase smarter context.
 
-We built something that inverts the problem: **a deterministic outer loop that decides what the model SHOULDN'T see — packaged as a zero-dependency npm module you can run without an API key.**
+We built something that inverts the problem: **a deterministic outer loop that decides what the model SHOULDN'T see.**
 
-```
-npm install metaagent-v5
-```
-
-**The core insight**
-
-LLMs are terrible at knowing when to stop. Feed them 50k tokens of history, and they'll hallucinate connections between things said three hours ago. Cross-session memory decays by recency, not by value. When the model goes off-task, you can't audit *why* — it's all inside the black box.
+Here's the problem we kept hitting: LLMs are terrible at knowing when to stop. Feed them a lot of conversation history, and they'll hallucinate connections between unrelated turns. Cross-session memory decays by recency, not by value. And when the model goes off-task, you can't audit *why* — it's all inside the black box.
 
 Our answer: externalize all context-management decisions into a deterministic state machine. The LLM still reasons. But what enters its context window is decided by auditable, testable, version-controlled rules.
 
 **Three mechanisms that made the difference**
 
-1. **The Room Metaphor.** Every workflow node is a sealed room. The LLM inside Room N5 (scheduler) has no idea what was discussed in Room N1 (boundary definition). Each room gets its own constitution, conversation log, and injection rules. Rooms pass data via explicit contracts — never accidental context bleed. This alone cut token waste ~60%.
+**1. The Room Metaphor**
 
-2. **TaskType Duality.** Agent tasks fall into exactly two categories. *field_based*: discrete parameter collection with DET verification (e.g., "record expense: ¥25"). *topic_based*: continuous semantic exploration with embedding-guarded matching. Knowing which type you're in changes everything about injection strategy.
+Every workflow node is a sealed room. The LLM inside Room N5 (scheduler) has no idea what was discussed in Room N1 (boundary definition). Each room gets its own constitution (injectable rules), conversation log, and turn history limit. Rooms inherit data via explicit contracts — never by accidental context bleed.
 
-3. **@importance.** Not all history is equal. A critical room gets 2× history boost. A low-importance room gets 0.15×. Truncation is deterministic — the oldest turns in low rooms drop first, zero LLM involvement.
+**2. TaskType Duality**
+
+Agent tasks fall into exactly two categories. *field_based*: discrete parameter collection. Fields are enumerable, DET (deterministic) verification works, no semantic ambiguity. *topic_based*: continuous semantic exploration, embedding-guarded matching with deterministic keyword fallback. Knowing which type you're on changes everything about injection strategy.
+
+**3. @importance: Critical Rooms Get Bigger Windows**
+
+Not all conversation history is equal. A critical room (state enumeration, root constitution) gets more history budget. A low-importance room gets less. Truncation is deterministic — the oldest turns in low rooms drop first, zero LLM involvement.
 
 **Eating our own dog food**
 
-The most fun part: we used the methodology to build MetaAgent — an agent that guides users through designing agents using the same methodology. 18 intents, 16 room constitutions, a full L3 config package. SDK `createAgent()` loads any L3 config and just works — we verified this by generating a 3-intent accounting assistant L3 on the fly and loading it in 3 seconds.
+We used the methodology to build MetaAgent — an agent that guides users through designing agents using the same methodology. 18 intents, 16 room constitutions, a full L3 config package. As a side effect, we ended up with a reusable SDK: `createAgent()` loads any L3 config and runs.
 
-**What shipped today**
+**Try it**
 
-- **npm package:** `npm install metaagent-v5` — zero dependencies, mock mode works without API key
-- **SDK:** `import { createAgent } from 'metaagent-v5'` — one function, any L3 config
-- **Tests:** 65 unit tests covering state machine, route table, and context manager
-- **Framework repo:** https://github.com/Liukdc/framework/tree/main/MetaAgent/v5.8 — full v5.8 architecture, constitutions, toolchain
+```
+npm install metaagent-v5
+```
 
-**Why now**
+```js
+import { createAgent } from 'metaagent-v5';
 
-The agent space converges on "bigger context windows = better agents." We think the answer is *controlled* context windows — every injected token has a documented reason, every degradation path is deterministic, and the LLM is a reasoning engine, not a context manager.
+// Zero-config — no API key needed (mock mode)
+const agent = await createAgent();
 
-A year of iteration across a pending patent, a master's thesis, and multiple deployments. Released today. Feedback welcome.
+// Or with real model
+const agent = await createAgent({ apiKey: 'sk-xxx' });
+
+await agent.startSession('demo');
+const r = await agent.sendMessage('Design an accounting assistant for me');
+```
+
+**Repo:** https://github.com/Liukdc/framework/tree/main/MetaAgent/v5.8
+
+This is the result of iteration across a pending patent, research work on LLM agent design, and real-world testing. All feedback welcome — especially on the architecture, not just the npm package.
