@@ -35,4 +35,6 @@ node src-v5.8/demo-fugui-xiaoan.js
 
 ## 要求
 
-Node.js >= 18 | DeepSeek API Key | `npm install`（仅需 better-sqlite3）
+Node.js >= 18 | DeepSeek API Key
+
+无需 `npm install` 即可运行（SQLite 可选，缺失时自动降级为内存存储）。需要持久化时再 `npm install`。`better-sqlite3` 需要原生编译，Windows 上需 Visual Studio Build Tools。
