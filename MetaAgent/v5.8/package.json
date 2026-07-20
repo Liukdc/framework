@@ -1,5 +1,5 @@
 {
-  "name": "@exomind/metaagent",
+  "name": "metaagent-v5",
   "version": "5.8.0",
   "description": "元智能体 SDK — 给定 L3 配置文件即可运行的态控架构 Agent 引擎",
   "type": "module",
