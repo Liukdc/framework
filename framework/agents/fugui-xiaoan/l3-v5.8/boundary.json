@@ -1,0 +1,41 @@
+{
+  "sceneDefinition": "这是一个语音记账工具，用户说出支出，系统记录并支持查询和删除。",
+  "alignScenarioFlag": false,
+  "domainRuleSessionEnabled": false,
+  "slackNodeDeclaration": { "enabled": true, "boundaryDescription": "用户闲聊、寒暄、社交表达", "guardrailStrategy": "soft_landing" },
+  "doList": [
+    { "intent": "record", "taskType": "field_based", "topicEvolutionEnabled": false, "interactionMode": "voice_input_text_reply", "dataHandling": "本地存储" },
+    { "intent": "query", "taskType": "field_based", "topicEvolutionEnabled": false, "interactionMode": "voice_input_text_reply", "dataHandling": "本地读取" },
+    { "intent": "delete", "taskType": "field_based", "topicEvolutionEnabled": false, "interactionMode": "voice_input_text_reply", "dataHandling": "本地删除" },
+    { "intent": "compare", "taskType": "field_based", "topicEvolutionEnabled": false, "interactionMode": "voice_input_text_reply", "dataHandling": "本地读取+计算", "subType": ["time", "category", "unit_price"] },
+    { "intent": "other", "taskType": "field_based", "topicEvolutionEnabled": false, "interactionMode": "voice_input_text_reply", "dataHandling": "架构自动路由" }
+  ],
+  "notDoList": [
+    { "topic": "不自动分类", "guardrailStrategy": "hard_reject" },
+    { "topic": "不推荐理财", "guardrailStrategy": "soft_landing", "softLandingIntent": "query" },
+    { "topic": "不记收入", "guardrailStrategy": "hard_reject" },
+    { "topic": "不支持图片识别", "guardrailStrategy": "hard_reject" },
+    { "topic": "不支持手势操作", "guardrailStrategy": "hard_reject" },
+    { "topic": "不闲聊", "guardrailStrategy": "soft_landing", "softLandingIntent": "other" },
+    { "topic": "不回答非记账问题", "guardrailStrategy": "soft_landing", "softLandingIntent": "other" },
+    { "topic": "不上传云端分析", "guardrailStrategy": "hard_reject" },
+    { "topic": "不分享第三方", "guardrailStrategy": "hard_reject" }
+  ],
+  "softLandingTargets": {
+    "推荐理财": { "targetIntent": "query" },
+    "闲聊": { "targetIntent": "other" },
+    "非记账问题": { "targetIntent": "other" }
+  },
+  "guardrailStrategies": {
+    "hardRejectTemplate": "小安只会记账哦。",
+    "guidedRejectTemplate": "小安只会记账哦。{{anchorText}}",
+    "softLandingTemplate": "我可以帮你记，你要先记完这条还是先查？"
+  },
+  "metaInstructions": [
+    { "type": "wake", "patterns": ["大猩猩慢慢醒"] },
+    { "type": "exit", "patterns": ["大猩猩飞走吧"] },
+    { "type": "cancel", "patterns": ["取消"] }
+  ],
+  "taskTypeAlignmentStatus": "aligned",
+  "corpusCollectionPlan": { "targetCount": { "min": 20, "max": 30 }, "execModeDecision": "模式B" }
+}

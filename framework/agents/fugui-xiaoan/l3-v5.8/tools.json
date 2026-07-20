@@ -1,0 +1,46 @@
+{
+  "requiredTools": {
+    "insert_record": {
+      "contractIn": {"category":"string","amount":"number","date":"string(YYYY-MM-DD)","quantity":"number(default:1)","unit":"string|null(default:null)"},
+      "contractOut": {"success":true,"recordId":"number"},
+      "sqlTemplate": "INSERT INTO records (category, amount, date, quantity, unit) VALUES (?, ?, ?, ?, ?)"
+    },
+    "query_records": {
+      "contractIn": {"startDate":"string|null","endDate":"string|null","category":"string|null","minAmount":"number|null","maxAmount":"number|null"},
+      "contractOut": {"records":"[{id,category,amount,date,quantity,unit}]","total":"number"},
+      "sqlTemplate": "SELECT * FROM records WHERE date BETWEEN ? AND ? [AND category=?] [AND amount>=?] [AND amount<=?]"
+    },
+    "delete_record": {
+      "contractIn": {"recordId":"number"},
+      "contractOut": {"success":true,"deletedRecord":"{category,amount,date}"},
+      "sqlTemplate": "DELETE FROM records WHERE id = ?"
+    },
+    "query_total": {
+      "contractIn": {"timeRange":"string(DET内部时间解析:this_month/last_month/YYYY-MM)"},
+      "contractOut": {"total":"number"},
+      "sqlTemplate": "SELECT SUM(amount) as total FROM records WHERE date BETWEEN ? AND ?"
+    },
+    "query_unit_price": {
+      "contractIn": {"item":"string","date":"string(DET内部时间解析:yesterday/today)"},
+      "contractOut": {"unitPrice":"number","unit":"string","amount":"number","quantity":"number"},
+      "sqlTemplate": "SELECT amount, quantity, unit FROM records WHERE category=? AND date=?"
+    }
+  },
+  "catalogTools": {
+    "get_current_date": {"description":"获取当前日期","output":{"date":"string","month":"string"}},
+    "format_currency": {"description":"格式化金额","input":{"amount":"number"},"output":{"formatted":"string"}},
+    "calculate_percentage": {"description":"计算百分比","input":{"oldValue":"number","newValue":"number"},"output":{"diff":"number","percentage":"string"}},
+    "query_records": {"description":"查询明细记录(定位用)","input":{"startDate":"string|null","endDate":"string|null","category":"string|null"},"output":{"records":"[]","total":"number"}}
+  },
+  "metaTool": {
+    "search_tools": {"input":{"query":"string"},"output":{"tools":"[{name,description}]"},"description":"搜索系统工具库中可用工具"}
+  },
+  "toolAssignmentByIntent": {
+    "record": {"required":["insert_record"],"catalog":["format_currency"]},
+    "query": {"required":["query_records"],"catalog":["get_current_date","format_currency"]},
+    "delete": {"required":["delete_record"],"catalog":["query_records"]},
+    "compare": {"required":["query_total","query_unit_price"],"catalog":["get_current_date","calculate_percentage","format_currency"]},
+    "other": {"required":[],"catalog":[]},
+    "SLACK_NODE": {"required":[],"catalog":[]}
+  }
+}

@@ -1,0 +1,190 @@
+{
+  "timestamp": "2026-07-20T02:51:19.835Z",
+  "passRate": 52.63157894736842,
+  "totalCases": 19,
+  "passedCount": 10,
+  "results": [
+    {
+      "caseId": "case02",
+      "name": "记账-简单",
+      "passed": false,
+      "stateSequence": [
+        "listening",
+        "listening"
+      ]
+    },
+    {
+      "caseId": "case03",
+      "name": "查询",
+      "passed": false,
+      "stateSequence": [
+        "listening",
+        "in_session"
+      ]
+    },
+    {
+      "caseId": "case04",
+      "name": "删除",
+      "passed": false,
+      "stateSequence": [
+        "listening",
+        "listening",
+        "waiting_confirm",
+        "listening"
+      ]
+    },
+    {
+      "caseId": "case05",
+      "name": "对比",
+      "passed": false,
+      "stateSequence": [
+        "listening",
+        "listening"
+      ]
+    },
+    {
+      "caseId": "case06",
+      "name": "金额超限",
+      "passed": false,
+      "stateSequence": [
+        "listening",
+        "clarifying"
+      ]
+    },
+    {
+      "caseId": "case07",
+      "name": "时间未来",
+      "passed": false,
+      "stateSequence": [
+        "listening",
+        "listening"
+      ]
+    },
+    {
+      "caseId": "case08",
+      "name": "记账中途查",
+      "passed": false,
+      "stateSequence": [
+        "listening",
+        "listening",
+        "listening"
+      ]
+    },
+    {
+      "caseId": "case09",
+      "name": "记账中途放弃",
+      "passed": true,
+      "stateSequence": [
+        "listening",
+        "listening",
+        "listening"
+      ]
+    },
+    {
+      "caseId": "case10",
+      "name": "切换房间",
+      "passed": true,
+      "stateSequence": [
+        "listening",
+        "listening",
+        "listening"
+      ]
+    },
+    {
+      "caseId": "case11",
+      "name": "退出",
+      "passed": false,
+      "stateSequence": [
+        "listening",
+        "idle"
+      ]
+    },
+    {
+      "caseId": "case12",
+      "name": "连续多轮",
+      "passed": false,
+      "stateSequence": [
+        "listening",
+        "listening",
+        "listening",
+        "listening"
+      ]
+    },
+    {
+      "caseId": "case13",
+      "name": "修改字段",
+      "passed": true,
+      "stateSequence": [
+        "listening",
+        "listening",
+        "in_session",
+        "in_session"
+      ]
+    },
+    {
+      "caseId": "case14",
+      "name": "TEMP_TOPIC",
+      "passed": true,
+      "stateSequence": [
+        "listening",
+        "listening"
+      ]
+    },
+    {
+      "caseId": "case15",
+      "name": "SLACK_NODE进",
+      "passed": true,
+      "stateSequence": [
+        "listening",
+        "slack_node"
+      ]
+    },
+    {
+      "caseId": "case16",
+      "name": "不编造功能",
+      "passed": true,
+      "stateSequence": [
+        "listening",
+        "slack_node",
+        "slack_node"
+      ]
+    },
+    {
+      "caseId": "case17",
+      "name": "修改记录",
+      "passed": true,
+      "stateSequence": [
+        "listening",
+        "listening",
+        "in_session"
+      ]
+    },
+    {
+      "caseId": "case18",
+      "name": "冷启动软拦截",
+      "passed": true,
+      "stateSequence": [
+        "listening",
+        "listening"
+      ]
+    },
+    {
+      "caseId": "case20",
+      "name": "sessionCheckpoint恢复",
+      "passed": true,
+      "stateSequence": [
+        "listening",
+        "listening"
+      ]
+    },
+    {
+      "caseId": "case21",
+      "name": "查询恢复",
+      "passed": true,
+      "stateSequence": [
+        "listening",
+        "listening"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "turnType": ["ask", "reply", "complete", "off-task", "giveup", "validation_failed"],
+  "outputFormat": {
+    "requiredFields": ["turnType", "message", "collectedFields"],
+    "optionalFields": ["askingField", "changeLevel", "changeLevelReason", "validationResult", "offTaskInput", "result"]
+  },
+  "askingField": {
+    "field_based": ["null", "category", "amount", "time", "quantity", "unit", "compareType", "item", "dimension1", "dimension2", "recordId"],
+    "topic_based": "模型动态生成的主题标签（富贵小安不适用）"
+  },
+  "changeLevel": {
+    "field_based": "null（不需要changeLevel）",
+    "none": true
+  },
+  "changeLevelReason": {
+    "field_based": "null（不需要changeLevelReason）"
+  },
+  "fiveLayerFilter": {
+    "layer0": { "name": "口令精确匹配", "executor": "DET", "llmCalls": 0, "commands": ["wake", "exit", "cancel", "switch"] },
+    "layer0_5": { "name": "DET关键词扫描", "executor": "DET", "llmCalls": 0, "keywords": { "record": ["查","查询","删","删除","比","对比"], "query": ["记","删","比"], "delete": ["记","查","比"], "compare": ["记","查","删"] } },
+    "layer1": { "name": "意图识别", "executor": "LLM轻量", "llmCalls": 1, "model": "deepseek", "mechanism": "强制选择A/B/C/D/E+logprobs+第二分类维度S/T/U" },
+    "layer2": { "name": "环节内模型自治", "executor": "LLM", "llmCalls": "环节内多轮", "model": "deepseek", "features": ["字段采集", "tool calling(v5.4)", "工具分层(v5.5)", "off-task检测"] },
+    "layer3": { "name": "DET四项检查", "executor": "DET", "llmCalls": 0, "checks": ["L1结构校验", "DET值域复验", "logprobs检查(冷启动软拦截)", "硬编码兜底"] }
+  },
+  "offTaskDualGuarantee": {
+    "guarantee1": "宪法强制+上下文管理器优先注入环节隔离声明",
+    "guarantee2": "模型返回off-task→DET非空检查→ANALYZING重新识别",
+    "primaryMechanism": "switch口令'切断房间'(DET EXACT_MATCH+S3物理隔离+roomStateIndex)"
+  },
+  "sessionCheckpoint": {
+    "recoveryIntents": ["record", "query", "delete", "compare"],
+    "ttl": 604800,
+    "autoStart": true
+  },
+  "schedulerState": {
+    "fields": ["_state", "_lastRecord", "_lastRecordId", "_activeSession{intent,taskType,topicId,startTime,contextGraph,turnHistory,neededTools}", "_antiFlapCounter", "_antiFlapLocked", "_pendingCollectedFields", "_contractStore", "_currentProjectId", "_sceneExtensions"]
+  }
+}

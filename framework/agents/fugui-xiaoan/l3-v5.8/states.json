@@ -1,0 +1,26 @@
+{
+  "states": [
+    { "name": "IDLE", "type": "steady", "executor": "none", "isRequired": true },
+    { "name": "LISTENING", "type": "steady", "executor": "human", "isRequired": true },
+    { "name": "ANALYZING", "type": "transient", "executor": "llm_light", "isRequired": true, "taskType": "N/A", "dispatchCriteria": { "costLevel": "low", "canHardcode": false, "hasObjectiveAnswer": true } },
+    { "name": "IN_SESSION", "type": "steady_container", "executor": "llm_instance", "isRequired": true, "taskType": "field_based" },
+    { "name": "CLARIFYING", "type": "guardian", "executor": "det", "isRequired": true },
+    { "name": "WAITING_CONFIRM", "type": "guardian", "executor": "human", "isRequired": true },
+    { "name": "EXECUTING", "type": "transient", "executor": "det", "isRequired": true, "note": "v5.4:仅写入/删除(record INSERT/delete DELETE)" },
+    { "name": "CLOSING", "type": "transient", "executor": "det", "isRequired": true },
+    { "name": "SLACK_NODE", "type": "steady", "executor": "llm_instance", "isRequired": false, "taskType": "N/A" }
+  ],
+  "inSessionSubtypes": [
+    { "intent": "record", "executor": "llm_instance", "taskType": "field_based", "topicEvolutionEnabled": false, "triggerCondition": "ANALYZING: intent=record", "requiresToolCalling": false, "completeRoute": "EXECUTING" },
+    { "intent": "query", "executor": "llm_instance", "taskType": "field_based", "topicEvolutionEnabled": false, "triggerCondition": "ANALYZING: intent=query", "requiresToolCalling": true, "completeRoute": "LISTENING" },
+    { "intent": "delete", "executor": "llm_instance_with_human_confirm", "taskType": "field_based", "topicEvolutionEnabled": false, "triggerCondition": "ANALYZING: intent=delete", "requiresToolCalling": false, "completeRoute": "WAITING_CONFIRM" },
+    { "intent": "compare", "executor": "llm_instance", "taskType": "field_based", "topicEvolutionEnabled": false, "triggerCondition": "ANALYZING: intent=compare", "requiresToolCalling": true, "completeRoute": "LISTENING" },
+    { "intent": "other", "executor": "llm_instance", "taskType": "N/A", "topicEvolutionEnabled": false, "triggerCondition": "ANALYZING: intent=other", "completeRoute": "架构自动路由(S→SLACK_NODE/T→TEMP_TOPIC)" }
+  ],
+  "omittedStates": [
+    { "name": "PARAM_PARSING", "reason": "合并入ANALYZING" },
+    { "name": "VALIDATING", "reason": "合并入IN_SESSION+DET复验" },
+    { "name": "PREVIEWING", "reason": "记账场景无可视化diff需求" }
+  ],
+  "taskTypeAlignmentStatus": "aligned"
+}

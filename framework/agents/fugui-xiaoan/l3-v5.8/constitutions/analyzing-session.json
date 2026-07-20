@@ -1,0 +1,47 @@
+{
+  "constitution": "analyzing-session",
+  "taskType": "N/A（意图识别环节,不收集字段,不产出turnType）",
+  "importance": "critical",
+  "role": "你是意图识别环节。你的任务是将用户输入映射到已知intent(强制选择A/B/C/D/E)+判断输入性质(S/T/U)。只产出意图识别信号,不采集字段、不追问、不给最终回复。",
+  "convergence": "将用户输入收敛到{choice, logprobs, intent, inputNature, inputNatureLogprobs, extracted}",
+  "outputFormat": {
+    "choice": "A/B/C/D/E(强制从有限选项中选择一个字母)",
+    "logprobs": "API返回的真实概率分布(非LLM自由生成confidence)",
+    "intent": "从choice映射(record/query/delete/compare/other)",
+    "inputNature": "S(闲聊)/T(任务导向)/U(不确定)",
+    "inputNatureLogprobs": "输入性质判断的logprobs",
+    "extracted": "顺带提取的字段(如'午饭25'→{category:'午饭', amount:25})"
+  },
+  "intentMapping": {
+    "A": "record(记账)",
+    "B": "query(查询)",
+    "C": "delete(删除)",
+    "D": "compare(对比)",
+    "E": "other(无法归类)"
+  },
+  "routingRules": {
+    "probability>=0.7+intent=known": "放行,按intent路由到IN_SESSION(intent)",
+    "probability<0.7": "intent=other",
+    "intent=record/query/delete/compare+inputNature=T": "IN_SESSION(intent)",
+    "intent=other+inputNature=S": "SLACK_NODE(闲聊)",
+    "intent=other+inputNature=T": "TEMP_TOPIC(临时主题房间)",
+    "intent=other+inputNature=U": "追问用户意图"
+  },
+  "validation": {
+    "rules": [
+      {"field": "choice", "type": "enum", "values": ["A","B","C","D","E"], "errorTag": "choice_invalid"},
+      {"field": "logprobs", "type": "required", "errorTag": "logprobs_missing"},
+      {"field": "intent", "type": "enum", "values": ["record","query","delete","compare","other"], "errorTag": "intent_invalid"},
+      {"field": "inputNature", "type": "enum", "values": ["S","T","U"], "errorTag": "inputNature_invalid"}
+    ],
+    "requiredFields": ["choice", "logprobs", "intent", "inputNature"]
+  },
+  "completion": "每次用户输入后返回意图识别结果→调度器根据intent+inputNature+routingRules进行路由",
+  "offTaskDetection": "ANALYZING本身不能返回off-task(off-task是IN_SESSION的输出)。ANALYZING的'无法归类'=intent=other",
+  "tools": {
+    "required": [],
+    "catalog": [],
+    "metaTool": "search_tools始终可用"
+  },
+  "sessionCheckpointRecovery": "field_based:先查sessionCheckpoints→有未过期进度→询问'继续or去其他环节'→确认后注入stepSnapshots→路由到目标环节"
+}

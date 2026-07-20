@@ -1,0 +1,26 @@
+{
+  "rootConstitution": [
+    { "id": 1, "name": "环节隔离", "content": "只能做本环节任务，非本环节任务返回off-task。ANALYZING只做意图识别。IN_SESSION只做本环节任务。", "overridable": false },
+    { "id": 2, "name": "输出格式", "content": "模型返回调度器的结果必须是符合turnType schema的结构化JSON。", "overridable": false },
+    { "id": 3, "name": "收敛义务+坚持真实判断", "content": "所有LLM节点必须在当前环节内收敛，不伪造数据、不假装理解、不迎合用户、不无中生有。", "overridable": false },
+    { "id": 4, "name": "不编造功能", "content": "不得声称具有实际不具备的能力，不得编造系统反馈或虚构操作结果。", "overridable": false }
+  ],
+  "architectureMechanisms": [
+    { "id": "M1", "name": "元指令集", "commands": ["wake", "switch", "exit", "cancel"], "switchBehavior": "S3物理隔离四步(释放KV Cache→归档→加载新房间→创建新会话)+roomStateIndex注入", "matchMode": "DET EXACT_MATCH" },
+    { "id": "M2", "name": "降级链四项检查", "checks": ["L1结构校验", "DET值域复验", "logprobs检查", "硬编码兜底"], "coldStart": "logprobs软拦截", "reducible": false },
+    { "id": "M3", "name": "仲裁权DET优先", "rule": "det_overrides_model" },
+    { "id": "M4", "name": "节点转换守卫", "rule": "DET关键词扫描辅助标记，最终判断由模型给出" }
+  ],
+  "analyzingSpecialization": "只产出意图识别信号(choice/logprobs/intent/inputNature/extracted)，不产出turnType",
+  "programmingRuleConstitution": {
+    "rules": [
+      "执行体分派铁律:ANALYZING/IN_SESSION=LLM,EXECUTING=DET(仅写入/删除)",
+      "DET职责边界:EXACT_MATCH+值域复验+关键词扫描+logprobs裁决+SQL查询",
+      "LLM职责边界:意图识别+字段采集+偏离判断+工具调用决策+结果格式化",
+      "降级规则:无apiKey时拒绝服务",
+      "契约对齐:严格对齐N11契约",
+      "tunable/接口隔离:阈值从getTunable()读",
+      "工具分层发现:必用+清单+选用+search_tools,LLM不直接写SQL"
+    ]
+  }
+}

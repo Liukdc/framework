@@ -1,0 +1,40 @@
+{
+  "contextManager": {
+    "threeLayerDuties": {
+      "matchLayer": {
+        "name": "匹配层",
+        "description": "按 topicPath/stepName 做规则子图匹配、冲突检测、条件检查（确定性计算）",
+        "functions": ["subgraphMatch", "conflictDetect", "conditionCheck"],
+        "tools": "从 toolRegistry 按环节宪法 @section tools/@section tool_catalog 筛选必用工具完整定义+选用工具轻量目录"
+      },
+      "decisionLayer": {
+        "name": "决策层",
+        "description": "按 importance/immutableLevel/strengthens 权重决定注入哪些内容（确定性计算）",
+        "injectionPriority": "领域规则(L0>L1>L2>L3,同层按importance:critical>high>normal>low) > 关联摘要 > topicEvolution分层包 > turnHistory",
+        "conversationInjection": "v5.7分段保留:优先全量对话(segmentType=full)→critical摘要→high摘要→normal摘要",
+        "summaryLimits": {"critical": 10, "high": 5, "normal": 2}
+      },
+      "assemblyLayer": {
+        "name": "拼接层",
+        "description": "把决策结果组装成 prompt，做 token 预算分配与截断（确定性计算）",
+        "fieldBasedGating": "字段级硬门控(DET确定性匹配)。保护与 askingField 同名的历史轮次不被淘汰。askingField=null 时降级为纯语义匹配",
+        "tokenBudget": "turnHistory_limit(20轮全量对话)×critical_room_history_boost(critical=2.0)，摘要注入独立于 turnHistory_limit"
+      }
+    },
+    "buildPromptContext": {
+      "params": ["contextGraph", "turnHistory", "currentAskField", "currentTaskType", "currentStepName", "contractStore", "tunableParams"],
+      "execution": "匹配层→决策层→拼接层，三层顺序执行",
+      "toolInjection": "v5.5工具分层:必用工具完整定义(@section tools)+选用工具清单(@section tool_catalog轻量级目录)+search_tools meta-tool(始终可用)",
+      "conversationArchive": "v5.8:不参与拼接,仅供search_tools查询历史对话"
+    },
+    "updateGraph": {
+      "params": ["userInput", "modelTurn", "turnType", "askingField", "changeLevel", "validationResult"],
+      "description": "更新逻辑拼接图,记录本轮对话和校验结果"
+    },
+    "archiveGraph": {
+      "params": [],
+      "description": "归档当前上下文图,新建空图。v5.7:产出物确认后触发分段保留(生成摘要→原始对话移到conversationArchive)"
+    }
+  },
+  "isolationPrinciple": "调度器只调三接口,不内联拼接逻辑。阈值从getTunable()读。上下文管理器三层职责(匹配→决策→拼接)各自独立,不得合并。"
+}

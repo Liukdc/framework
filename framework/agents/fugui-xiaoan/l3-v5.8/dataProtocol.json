@@ -1,0 +1,54 @@
+{
+  "transferProtocol": [
+    {"from":"LISTENING","to":"ANALYZING","carry":"userInput","clear":null},
+    {"from":"ANALYZING","to":"IN_SESSION(record)","carry":"intent+taskType+logprobs+extracted","clear":null},
+    {"from":"ANALYZING","to":"IN_SESSION(query)","carry":"intent+taskType+logprobs+extracted","clear":null},
+    {"from":"ANALYZING","to":"IN_SESSION(delete)","carry":"intent+taskType+logprobs+extracted","clear":null},
+    {"from":"ANALYZING","to":"IN_SESSION(compare)","carry":"intent+taskType+logprobs+extracted","clear":null},
+    {"from":"ANALYZING","to":"IN_SESSION(other)","carry":"intent+inputNature+logprobs","clear":null},
+    {"from":"ANALYZING","to":"SLACK_NODE","carry":"inputNature","clear":null},
+    {"from":"ANALYZING","to":"CLOSING","carry":null,"clear":null},
+    {"from":"IN_SESSION(record)","to":"EXECUTING","carry":"result+validationResult","clear":null,"note":"v5.4:record走EXECUTING(INSERT)"},
+    {"from":"IN_SESSION(query)","to":"LISTENING","carry":null,"clear":"activeSession","note":"v5.4:query不经EXECUTING"},
+    {"from":"IN_SESSION(delete)","to":"WAITING_CONFIRM","carry":"result","clear":null},
+    {"from":"IN_SESSION(compare)","to":"LISTENING","carry":null,"clear":"activeSession","note":"v5.4:compare不经EXECUTING"},
+    {"from":"IN_SESSION","to":"CLARIFYING","carry":"validationResult+message","clear":null},
+    {"from":"IN_SESSION","to":"ANALYZING","carry":"offTaskInput+暂存collectedFields","clear":"activeSession","note":"off-task双重保障"},
+    {"from":"IN_SESSION","to":"LISTENING","carry":null,"clear":"activeSession","note":"giveup"},
+    {"from":"CLARIFYING","to":"IN_SESSION","carry":"用户修正输入","clear":null},
+    {"from":"WAITING_CONFIRM","to":"EXECUTING","carry":"decision=confirm","clear":null},
+    {"from":"WAITING_CONFIRM","to":"IN_SESSION(delete)","carry":"decision=reject","clear":null},
+    {"from":"EXECUTING","to":"LISTENING","carry":"_lastRecord+_lastRecordId","clear":"activeSession"},
+    {"from":"CLOSING","to":"IDLE","carry":null,"clear":"activeSession(保留_pendingCollectedFields)"},
+    {"from":"任意","to":"ANALYZING","carry":"contractStore.analyzingContractIn","clear":"activeSession","note":"意图级纠错逃生舱/switch口令"},
+    {"from":"SLACK_NODE","to":"ANALYZING","carry":"offTaskInput","clear":null}
+  ],
+  "guardRules": {
+    "priority": "exit > switch > cancel > wake(仅IDLE) > DET关键词扫描",
+    "m1Commands": [
+      {"type":"wake","trigger":"IDLE","action":"IDLE→LISTENING","s3":"创建新推理会话"},
+      {"type":"exit","trigger":"任意","action":"→CLOSING→IDLE","s3":"释放KV Cache+归档"},
+      {"type":"cancel","trigger":"任意","action":"→LISTENING","s3":"释放当前轮KV(不归档)"},
+      {"type":"switch","trigger":"任意","action":"→ANALYZING","s3":"释放KV Cache+归档+加载新房间+roomStateIndex"}
+    ],
+    "keywordScan": {
+      "record": {"keywords":["查","查询","查一下","删","删除","删掉","比","对比","比较"],"markAs":"query/delete/compare"},
+      "query": {"keywords":["记","记账","记一笔","删","删除","比","对比"],"markAs":"record/delete/compare"},
+      "delete": {"keywords":["记","查","比"],"markAs":"record/query/compare"},
+      "compare": {"keywords":["记","查","删"],"markAs":"record/query/delete"}
+    },
+    "degradationChain": [
+      {"check":"L1结构校验","executor":"DET","trigger":"complete","failure":"重试1次→熔断→硬编码回复"},
+      {"check":"DET值域复验","executor":"DET","trigger":"complete","failure":"CLARIFYING","rules":"N9 @section validation"},
+      {"check":"logprobs检查","executor":"DET","trigger":"complete","failure":"CLARIFYING","coldStart":"软拦截(标记warning不直接拦截)"},
+      {"check":"硬编码兜底","executor":"DET","trigger":"熔断","failure":"LISTENING"}
+    ]
+  },
+  "roomConversationLog": {
+    "retentionStrategy": "v5.7对话分段保留(产出物确认节点分段+摘要分级保留)",
+    "summaryLevels": {"critical":10,"high":5,"normal":2},
+    "slackNodeStrategy": "保留最近10轮(FIFO),不生成摘要",
+    "conversationArchive": "v5.8全量文本备份(FTS5全文搜索,不参与拼接)"
+  },
+  "contractStoreTables": ["analyzing_contract_in","analyzing_contract_out","sessionCheckpoints","roomConversationLog","conversationArchive","roomStateIndex","outputRegistry","toolRegistry","domainRules","ruleCandidates","ruleMiningQueue","projectRegistry","userLastProject"]
+}

@@ -1,0 +1,20 @@
+{
+  "engine":"SQLite+WAL",
+  "path":"<project_root>/.contractstore/<user_id>.db",
+  "tables": {
+    "analyzing_contract_in": {"columns":[{"name":"id","type":"TEXT PRIMARY KEY"},{"name":"userId","type":"TEXT NOT NULL"},{"name":"rawInput","type":"TEXT NOT NULL"},{"name":"createdAt","type":"TEXT NOT NULL"}]},
+    "sessionCheckpoints": {"columns":[{"name":"userId","type":"TEXT PRIMARY KEY"},{"name":"lastCompletedStep","type":"TEXT NOT NULL"},{"name":"completedSteps","type":"TEXT NOT NULL(JSON)"},{"name":"stepSnapshots","type":"TEXT NOT NULL(JSON)"},{"name":"ttl","type":"INTEGER DEFAULT 604800"}]},
+    "roomConversationLog": {"columns":[{"name":"logId","type":"TEXT PRIMARY KEY"},{"name":"userId","type":"TEXT NOT NULL"},{"name":"projectId","type":"TEXT NOT NULL"},{"name":"roomId","type":"TEXT NOT NULL"},{"name":"importance","type":"TEXT DEFAULT 'normal'"},{"name":"turnNumber","type":"INTEGER NOT NULL"},{"name":"userMessage","type":"TEXT"},{"name":"modelOutput","type":"TEXT"},{"name":"turnType","type":"TEXT"},{"name":"askingField","type":"TEXT"},{"name":"createdAt","type":"TEXT NOT NULL"},{"name":"segmentType","type":"TEXT DEFAULT 'full'(v5.7)"},{"name":"relatedOutputId","type":"TEXT(v5.7,summary时)"},{"name":"summaryImportance","type":"TEXT(v5.7,summary时)"},{"name":"originalTurnRange","type":"TEXT(v5.7,summary时)"}]},
+    "conversationArchive": {"columns":[{"name":"archiveId","type":"TEXT PRIMARY KEY"},{"name":"userId","type":"TEXT NOT NULL"},{"name":"projectId","type":"TEXT NOT NULL"},{"name":"roomId","type":"TEXT NOT NULL"},{"name":"turnNumber","type":"INTEGER NOT NULL"},{"name":"userMessage","type":"TEXT"},{"name":"modelOutput","type":"TEXT"},{"name":"turnType","type":"TEXT"},{"name":"askingField","type":"TEXT"},{"name":"createdAt","type":"TEXT NOT NULL"},{"name":"archivedAt","type":"TEXT NOT NULL"},{"name":"relatedOutputId","type":"TEXT"}],"fts5":"CREATE VIRTUAL TABLE conversationArchive_fts USING fts5(userMessage, modelOutput, content='conversationArchive')"},
+    "roomStateIndex": {"columns":[{"name":"userId","type":"TEXT NOT NULL"},{"name":"roomId","type":"TEXT NOT NULL"},{"name":"projectId","type":"TEXT NOT NULL"},{"name":"roomName","type":"TEXT NOT NULL"},{"name":"intent","type":"TEXT"},{"name":"taskType","type":"TEXT"},{"name":"lastActiveAt","type":"TEXT NOT NULL"},{"name":"pendingCount","type":"INTEGER DEFAULT 0"},{"name":"completedCount","type":"INTEGER DEFAULT 0"},{"name":"lastSummary","type":"TEXT"},{"constraint":"PRIMARY KEY (userId, roomId, projectId)"}]},
+    "outputRegistry": {"columns":[{"name":"outputId","type":"TEXT PRIMARY KEY"},{"name":"projectId","type":"TEXT NOT NULL"},{"name":"roomId","type":"TEXT NOT NULL"},{"name":"outputType","type":"TEXT NOT NULL"},{"name":"outputPath","type":"TEXT NOT NULL"},{"name":"outputName","type":"TEXT NOT NULL"},{"name":"outputSummary","type":"TEXT"},{"name":"keywords","type":"TEXT(JSON)"},{"name":"createdAt","type":"TEXT NOT NULL"}]},
+    "toolRegistry": {"columns":[{"name":"toolId","type":"TEXT PRIMARY KEY"},{"name":"toolName","type":"TEXT NOT NULL"},{"name":"toolType","type":"TEXT NOT NULL(required/catalog)"},{"name":"description","type":"TEXT"},{"name":"contractIn","type":"TEXT(JSON)"},{"name":"contractOut","type":"TEXT(JSON)"},{"name":"sqlTemplate","type":"TEXT"},{"name":"scope","type":"TEXT(JSON)"}]},
+    "projectRegistry": {"columns":[{"name":"projectId","type":"TEXT PRIMARY KEY"},{"name":"projectName","type":"TEXT NOT NULL"},{"name":"projectKeywords","type":"TEXT(JSON)"},{"name":"taskType","type":"TEXT"},{"name":"status","type":"TEXT DEFAULT 'active'"}]},
+    "userLastProject": {"columns":[{"name":"userId","type":"TEXT PRIMARY KEY"},{"name":"lastProjectId","type":"TEXT NOT NULL"}]}
+  },
+  "indexes": {
+    "roomConversationLog": ["(userId, projectId, roomId, segmentType, createdAt)","(userId, roomId, segmentType, summaryImportance)"],
+    "conversationArchive": ["(userId, projectId, roomId, createdAt)"],
+    "outputRegistry": ["(projectId, roomId, createdAt)","(intent, outputType)"]
+  }
+}

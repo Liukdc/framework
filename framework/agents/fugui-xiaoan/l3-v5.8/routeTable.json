@@ -1,0 +1,28 @@
+{
+  "firstLayerDefaults": { "analyzingModel": "deepseek", "inSessionModel": "deepseek" },
+  "routes": [
+    { "fromState": "ANALYZING", "contractOutKey": "intent=record", "toState": "IN_SESSION(record)", "routeRule": "hard_match", "modelHint": "通用模型即可", "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "ANALYZING", "contractOutKey": "intent=query", "toState": "IN_SESSION(query)", "routeRule": "hard_match", "modelHint": "通用模型即可", "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "ANALYZING", "contractOutKey": "intent=delete", "toState": "IN_SESSION(delete)", "routeRule": "hard_match", "modelHint": "通用模型即可", "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "ANALYZING", "contractOutKey": "intent=compare", "toState": "IN_SESSION(compare)", "routeRule": "hard_match", "modelHint": "通用模型即可", "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "ANALYZING", "contractOutKey": "intent=other", "toState": "IN_SESSION(other)", "routeRule": "hard_match", "modelHint": "通用模型即可", "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "ANALYZING", "contractOutKey": "inputNature=S", "toState": "SLACK_NODE", "routeRule": "hard_match", "modelHint": "通用模型即可", "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "ANALYZING", "contractOutKey": "exit口令", "toState": "CLOSING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "IN_SESSION(record)", "contractOutKey": "turnType=complete", "toState": "EXECUTING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false, "validationType": "value_domain" },
+    { "fromState": "IN_SESSION(query)", "contractOutKey": "turnType=complete", "toState": "LISTENING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false, "note": "v5.4:不经EXECUTING" },
+    { "fromState": "IN_SESSION(delete)", "contractOutKey": "turnType=complete", "toState": "WAITING_CONFIRM", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "IN_SESSION(compare)", "contractOutKey": "turnType=complete", "toState": "LISTENING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false, "note": "v5.4:不经EXECUTING" },
+    { "fromState": "IN_SESSION", "contractOutKey": "turnType=validation_failed", "toState": "CLARIFYING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false, "validationType": "value_domain" },
+    { "fromState": "IN_SESSION", "contractOutKey": "turnType=off-task", "toState": "ANALYZING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "IN_SESSION", "contractOutKey": "turnType=giveup", "toState": "LISTENING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "IN_SESSION", "contractOutKey": "turnType=ask/reply", "toState": "IN_SESSION(continue)", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "CLARIFYING", "contractOutKey": "—", "toState": "IN_SESSION", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "WAITING_CONFIRM", "contractOutKey": "decision=confirm", "toState": "EXECUTING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "WAITING_CONFIRM", "contractOutKey": "decision=reject", "toState": "IN_SESSION(delete)", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "EXECUTING", "contractOutKey": "status=success", "toState": "LISTENING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "SLACK_NODE", "contractOutKey": "off-task", "toState": "ANALYZING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "SLACK_NODE", "contractOutKey": "giveup", "toState": "LISTENING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "任意", "contractOutKey": "switch口令", "toState": "ANALYZING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false },
+    { "fromState": "任意", "contractOutKey": "cancel口令", "toState": "LISTENING", "routeRule": "hard_match", "modelHint": null, "topicEvolutionEventAppended": false, "expectsChangeLevel": false }
+  ]
+}

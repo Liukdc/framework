@@ -1,0 +1,32 @@
+{
+  "general": [
+    {"name":"logprobs_threshold","default":0.4,"range":"[0.0,1.0]","consumer":"DET复验"},
+    {"name":"turnHistory_limit","default":20,"range":"[5,100]","consumer":"session-store"},
+    {"name":"boundary_coverage_threshold","default":0.85,"range":"[0.50,1.00]","consumer":"N2覆盖率校验"},
+    {"name":"contract_inheritance_limit","default":0.3,"range":"[0.1,0.5]","consumer":"契约继承模块"},
+    {"name":"pending_fields_ttl","default":"24h","range":"[1h,168h]","consumer":"session-store"},
+    {"name":"cold_start_observation_window","default":50,"range":"[20,200]","consumer":"冷启动监测器"},
+    {"name":"cold_start_emergency_threshold","default":0.5,"range":"[0.3,0.8]","consumer":"冷启动监测器"},
+    {"name":"pid_kp","default":0.1,"range":"[0.01,1.0]","consumer":"自动调参引擎"},
+    {"name":"critical_room_history_boost","default":2.0,"range":"[1.0,5.0]","consumer":"session-store"},
+    {"name":"strengthens_weight_cap","default":3,"range":"[1,10]","consumer":"上下文管理器决策层"},
+    {"name":"changelevel_major_sample_rate","default":0.05,"range":"[0.01,0.20]","consumer":"抽样复核引擎"},
+    {"name":"max_critical_rooms","default":3,"range":"[1,10]","consumer":"上下文管理器拼接层"},
+    {"name":"domain_rule_validation_threshold","default":0.7,"range":"[0.5,0.9]","consumer":"异步提炼引擎"},
+    {"name":"rule_mining_schedule","default":"0 2 * * *","range":"cron表达式","consumer":"异步提炼引擎"},
+    {"name":"rule_mining_batch_threshold","default":5,"range":"[3,20]","consumer":"异步提炼引擎"},
+    {"name":"rule_mining_batch_size","default":10,"range":"[5,50]","consumer":"异步提炼引擎"}
+  ],
+  "fieldBased": [
+    {"name":"amount_limit_max","default":999999,"range":"[0,999999999]","consumer":"DET值域复验"},
+    {"name":"session_checkpoint_ttl","default":604800,"range":"[86400,2592000]","consumer":"态控调度器"}
+  ],
+  "topicBased": [],
+  "v57_v58": [
+    {"name":"conversation_segmentation_enabled","default":true,"range":"boolean","consumer":"session-store","version":"v5.7"},
+    {"name":"summary_retention_critical","default":10,"range":"[3,50]","consumer":"session-store","version":"v5.7"},
+    {"name":"summary_retention_high","default":5,"range":"[2,20]","consumer":"session-store","version":"v5.7"},
+    {"name":"summary_retention_normal","default":2,"range":"[1,10]","consumer":"session-store","version":"v5.7"},
+    {"name":"conversation_archive_enabled","default":true,"range":"boolean","consumer":"session-store","version":"v5.8"}
+  ]
+}
