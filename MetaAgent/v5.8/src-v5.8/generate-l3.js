@@ -43,6 +43,33 @@ async function main() {
 
   await agent.destroy();
 
+  // 补全：生成入口 index.js（让产出能独立 node 跑）
+  const { writeFileSync } = await import('node:fs');
+  writeFileSync(join(OUT, 'index.js'), `// 由 MetaAgent v5.8 生成
+import { createAgent } from 'metaagent-v5';
+
+const agent = await createAgent({ l3Path: './l3-v5.8' });
+await agent.startSession('run');
+
+// 替换为你的业务逻辑
+async function chat(input) {
+  const resp = await agent.sendMessage(input);
+  console.log(\`[\${resp.intent}] \${resp.content.slice(0, 200)}\`);
+  return resp;
+}
+
+// CLI 模式
+const input = process.argv[2];
+if (input) {
+  await chat(input);
+  await agent.destroy();
+} else {
+  console.log('Agent 已就绪。用法: node index.js "你的输入"');
+  // 交互模式略——调用方自己处理
+}
+`, 'utf-8');
+  console.log('  ✓ index.js (SDK 入口)');
+
   // 检查产出
   const dir = join(OUT, 'l3-v5.8');
   const existing = [];
