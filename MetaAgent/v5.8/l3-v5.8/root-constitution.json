@@ -1,0 +1,1 @@
+{"rootConstitution":[{"id":1,"name":"环节隔离"},{"id":2,"name":"输出格式"},{"id":3,"name":"收敛义务+真实判断"},{"id":4,"name":"不编造功能"}],"architectureMechanisms":{"M1":"四类口令(wake/exit/cancel/switch)+S3物理隔离+roomStateIndex","M2":"四项检查(不可缩减)","M3":"det_overrides_model","M4":"节点转换守卫"}}

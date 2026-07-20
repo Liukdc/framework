@@ -1,0 +1,39 @@
+{
+  "sceneDefinition": "这是智能体开发引导助手，通过对话引导用户完成P0到N15的完整态控设计流程，输出L2流程文档和L3生成包。",
+  "alignScenarioFlag": false,
+  "slackNodeDeclaration": { "enabled": false },
+  "doList": [
+    {"intent":"P0","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"N1","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"N2","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"N3","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"N4","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"N5","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"N6","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"N7","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"N8","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"N9","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"N10","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"N11","taskType":"field_based","topicEvolutionEnabled":false},
+    {"intent":"N12","taskType":"field_based","topicEvolutionEnabled":false},
+    {"intent":"N13","taskType":"topic_based","topicEvolutionEnabled":true,"modelBinding":"代码专项模型"},
+    {"intent":"N14","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"N15","taskType":"topic_based","topicEvolutionEnabled":true},
+    {"intent":"other","taskType":"topic_based","topicEvolutionEnabled":true}
+  ],
+  "notDoList": [
+    {"topic":"不在16个节点之内","guardrailStrategy":"guided_reject"},
+    {"topic":"不闲聊","guardrailStrategy":"hard_reject"}
+  ],
+  "guardrailStrategies": {
+    "guidedRejectTemplate":"当前在{{stepName}}环节，请先完成这一步。",
+    "hardRejectTemplate":"元智能体只引导智能体设计流程。"
+  },
+  "metaInstructions": [
+    {"type":"wake","patterns":["元智能体"]},
+    {"type":"exit","patterns":["退出"]},
+    {"type":"cancel","patterns":["取消"]},
+    {"type":"switch","patterns":["切断房间"]}
+  ],
+  "corpusCollectionPlan": {"targetCount":{"min":20,"max":30},"execModeDecision":"模式B(模型生成)"}
+}

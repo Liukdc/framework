@@ -1,0 +1,30 @@
+{
+  "source": "L2-N3 @outputs 产出物级 importance 声明",
+  "critical": [
+    {"intent": "P0", "output": "认知确认", "importance": "critical", "strategy": "强制写盘+审计追踪"},
+    {"intent": "N1", "output": "doList(场景定义+意图清单+边界清单)", "importance": "critical", "strategy": "强制写盘+审计追踪"},
+    {"intent": "N7", "output": "root-constitution(根宪法4条+架构机制M1-M4)", "importance": "critical", "strategy": "强制写盘+审计追踪"},
+    {"intent": "N9", "output": "session-constitutions(16份环节宪法)", "importance": "critical", "strategy": "强制写盘+审计追踪"},
+    {"intent": "N11", "output": "契约对齐报告(27项检查)", "importance": "critical", "strategy": "强制写盘+审计追踪"},
+    {"intent": "N13", "output": "骨架代码", "importance": "critical", "strategy": "强制写盘+审计追踪"}
+  ],
+  "high": [
+    {"intent": "N2", "output": "边界紧张度语料(20-30条)", "importance": "high", "strategy": "写盘"},
+    {"intent": "N3", "output": "状态枚举+执行体分派", "importance": "high", "strategy": "写盘"},
+    {"intent": "N4", "output": "状态转移图+路由表", "importance": "high", "strategy": "写盘"},
+    {"intent": "N14", "output": "审骨架报告", "importance": "high", "strategy": "写盘"}
+  ],
+  "normal": [
+    {"intent": "N5", "output": "调度器核心逻辑+上下文管理器三接口", "importance": "normal"},
+    {"intent": "N6", "output": "数据传递协议+守卫规则", "importance": "normal"},
+    {"intent": "N8", "output": "架构机制核查报告", "importance": "normal"},
+    {"intent": "N10", "output": "tunable参数声明(25个)", "importance": "normal"},
+    {"intent": "N12", "output": "L2→L3拆包(9个JSON)", "importance": "normal"},
+    {"intent": "N15", "output": "调参交付(tunables.js+参数冲突检测)", "importance": "normal"}
+  ],
+  "strategies": {
+    "forcedWrite": "critical 产出物必须写入持久存储，写盘失败则阻塞环节出口(不可降级)",
+    "write": "high/normal 产出物尽量写盘，失败可告警但不阻塞"
+  },
+  "totalOutputs": 16
+}
