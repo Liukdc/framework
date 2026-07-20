@@ -8,11 +8,13 @@ const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek
 export class DeepSeekAdapter {
   /**
    * @param {object} tunables - 可调参数
-   * @param {string} [apiKey] - DeepSeek API Key（优先于环境变量 DEEPSEEK_API_KEY）
+   * @param {string} [apiKey] - DeepSeek API Key
+   * @param {object[]} [doList] - L3 boundary.doList，用于 _describeIntent 生成语义标签
    */
-  constructor(tunables, apiKey) {
+  constructor(tunables, apiKey, doList) {
     this._tunables = tunables;
     this._apiKey = apiKey || process.env.DEEPSEEK_API_KEY || '';
+    this._doList = doList || null;
     if (!this._apiKey) console.warn('[DeepSeekAdapter] API Key 未设置（无 DEEPSEEK_API_KEY 环境变量且未传入 apiKey），API 调用将失败');
   }
 
@@ -155,7 +157,14 @@ export class DeepSeekAdapter {
 
   // === 辅助 ===
 
+  /** 从 L3 boundary 生成 intent 描述（通用 SDK：不硬编码 P0-N15） */
   _describeIntent(intent) {
+    // 优先从 L3 doList 读取
+    if (this._doList) {
+      const entry = this._doList.find(d => d.intent === intent);
+      if (entry?.description) return entry.description;
+    }
+    // 回退：MetaAgent 设计流程硬编码描述（SDK 使用者无需关心）
     const map = {
       P0: '认知加载——理解态控核心概念',
       N1: '场景定义与边界划定',

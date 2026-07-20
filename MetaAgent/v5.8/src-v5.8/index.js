@@ -53,7 +53,10 @@ export class MetaAgent {
     this._toolRegistry = new ToolRegistry(this._l3Path);
     this._outputsManager = new OutputsManager(this._l3Path);
     this._store = new ContractStore(this._dbPath, this._tunables);
-    this._adapter = new DeepSeekAdapter(this._tunables, options.apiKey || null);
+
+    // 加载 L3 boundary 供 adapter 生成 ANALYZING prompt 语义标签
+    const boundaryRaw = readFileSync(join(this._l3Path, 'boundary.json'), 'utf-8');
+    this._adapter = new DeepSeekAdapter(this._tunables, options.apiKey || null, JSON.parse(boundaryRaw).doList);
     this._telemetry = new Telemetry();
     this._constitutions = null;
     this._contextManager = null;
@@ -174,6 +177,19 @@ export class MetaAgent {
     }
     this._initialized = false;
   }
+}
+
+/**
+ * SDK 工厂：一句创建，给出 L3 配置包即可跑
+ * @example
+ *   import { createAgent } from '@exomind/metaagent';
+ *   const agent = await createAgent({ l3Path: './my-agent/', apiKey: 'sk-xxx' });
+ *   const resp = await agent.sendMessage('帮我记一笔账');
+ */
+export async function createAgent(options = {}) {
+  const agent = new MetaAgent(options);
+  await agent.init();
+  return agent;
 }
 
 // === CLI 模式 ===
