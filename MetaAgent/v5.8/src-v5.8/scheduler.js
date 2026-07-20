@@ -343,15 +343,19 @@ ${role1Parsed.content.slice(0, getTunable(this._tunables, 'maxContextTokens') / 
     const taskType = this._sm.getTaskType(intent);
 
     if (taskType === 'field_based') {
-      // Layer 3-A: value_domain 校验
-      if (intent === 'N11' && parsed.turnType === 'complete') {
-        if (!['pass', 'fail', 'partial'].some(v => parsed.content.includes(v))) {
-          return { valid: false, message: 'N11 只能输出 pass / fail / partial。请修正。' };
-        }
-      }
-      if (intent === 'N12' && parsed.turnType === 'complete') {
-        if (!parsed.content.match(/v?\d+\.\d+/)) {
-          return { valid: false, message: 'N12 只能输出版本号 (如 v5.8)。' };
+      // Layer 3-A: value_domain 校验（从 L3 dataProtocol 读取，避免硬编码 N11/N12）
+      let rules = null;
+      try {
+        const dp = JSON.parse(readFileSync(join(this._l3Path, 'dataProtocol.json'), 'utf-8'));
+        rules = dp?.fieldValidation?.[intent];
+      } catch { /* dataProtocol 缺失时跳过 */ }
+
+      if (rules) {
+        // 通用 field_based 校验：validateField 工具的逻辑移入
+        const matched = rules.validValues?.some(v => parsed.content.includes(v))
+                    || (rules.pattern && new RegExp(rules.pattern).test(parsed.content));
+        if (!matched && parsed.turnType === 'complete') {
+          return { valid: false, message: rules.failMessage || `${intent} 输出不符合校验规则` };
         }
       }
     } else if (taskType === 'topic_based') {

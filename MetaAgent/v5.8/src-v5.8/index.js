@@ -243,22 +243,21 @@ async function cli() {
   await interactiveMode();
 }
 
-/** 单轮对话 */
+/** 单轮对话（复用 createAgent 的 mock 降级逻辑） */
 async function singleTurn(input) {
-  const meta = new MetaAgent();
-  await meta.init();
+  const agent = await createAgent();  // 自动检测 API key，无则降级 mock
   console.log('[MetaAgent v5.8 CLI]');
 
-  const initResp = await meta.startSession('cli-session');
+  const initResp = await agent.startSession('cli-session');
   console.log(`[${initResp.state}] ${initResp.message}`);
 
-  const resp = await meta.sendMessage(input);
+  const resp = await agent.sendMessage(input);
   console.log(`\n[${resp.state}] intent=${resp.intent} prob=${resp.probability?.toFixed(3)}`);
   console.log(`[${resp.turnType}] ${resp.content?.slice(0, 500)}`);
 
   console.log('\n--- metrics ---');
-  console.log(JSON.stringify(meta.getMetrics(), null, 2));
-  await meta.destroy();
+  console.log(JSON.stringify(agent.getMetrics(), null, 2));
+  await agent.destroy();
 }
 
 /** 多轮交互模式 */
@@ -270,11 +269,10 @@ async function interactiveMode() {
     prompt: '\n> ',
   });
 
-  const meta = new MetaAgent();
-  await meta.init();
+  const agent = await createAgent();
 
   const sessionId = `interactive-${Date.now()}`;
-  const initResp = await meta.startSession(sessionId);
+  const initResp = await agent.startSession(sessionId);
 
   console.log('══════════════════════════════════════════');
   console.log('  MetaAgent v5.8 — 交互模式');
@@ -294,19 +292,19 @@ async function interactiveMode() {
     }
 
     if (input === '/state') {
-      console.log(`  状态: ${meta.fullState} | intent: ${meta.currentIntent || 'none'}`);
+      console.log(`  状态: ${agent.fullState} | intent: ${agent.currentIntent || 'none'}`);
       rl.prompt();
       return;
     }
 
     if (input === '/metrics') {
-      console.log('  metrics:', JSON.stringify(meta.getMetrics(), null, 2));
+      console.log('  metrics:', JSON.stringify(agent.getMetrics(), null, 2));
       rl.prompt();
       return;
     }
 
     try {
-      const resp = await meta.sendMessage(input);
+      const resp = await agent.sendMessage(input);
       console.log(`\n━━━ [${resp.state}] intent=${resp.intent} prob=${resp.probability?.toFixed(3)} turnType=${resp.turnType} ━━━`);
       console.log(resp.content);
     } catch (err) {
@@ -317,8 +315,8 @@ async function interactiveMode() {
 
   rl.on('close', async () => {
     console.log('\n--- metrics ---');
-    console.log(JSON.stringify(meta.getMetrics(), null, 2));
-    await meta.destroy();
+    console.log(JSON.stringify(agent.getMetrics(), null, 2));
+    await agent.destroy();
     process.exit(0);
   });
 }
