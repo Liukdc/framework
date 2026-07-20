@@ -93,9 +93,11 @@ export class ContractStore {
         _getAll(sql, args) {
           const table = this._extractTable(sql);
           const rows = this._data.get(table) || [];
-          // WHERE session_id=? 过滤
-          if (args.length > 0 && typeof args[0] === 'string') {
-            return rows.filter(r => r.session_id === args[0]);
+          // 从 WHERE 子句提取过滤字段名
+          const whereMatch = sql.match(/WHERE\s+(\w+)\s*=\s*\?/i);
+          if (whereMatch && args.length > 0) {
+            const field = whereMatch[1];
+            return rows.filter(r => r[field] === args[0]);
           }
           return rows;
         }
@@ -225,7 +227,7 @@ export class ContractStore {
 
     // v5.7: 产出物确认后分段标记
     if (getTunable(this._tunables, 'segmentationOnConfirm') && turnType === 'complete') {
-      this._db.prepare(`INSERT INTO conversation_log (session_id, turn_index, role, content, turn_type, created_at) VALUES (?, ?, 'system', '[SEGMENT_CUT]', 'segment_cut', ?)`).run(sessionId, turnIndex + 0.1, Date.now());
+      this._db.prepare(`INSERT INTO conversation_log (session_id, turn_index, role, content, turn_type, created_at) VALUES (?, ?, 'system', '[SEGMENT_CUT]', 'segment_cut', ?)`).run(sessionId, turnIndex + 1, Date.now());
     }
 
     // v5.8: FTS5 同步写入

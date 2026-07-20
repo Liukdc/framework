@@ -326,7 +326,7 @@ export class Scheduler {
 3. 语料是否有歧义或无法判定？
 
 角色一输出：
-${role1Parsed.content.slice(0, 4096)}
+${role1Parsed.content.slice(0, getTunable(this._tunables, 'maxContextTokens') / 2)}
 
 请逐条审查，标注通过/边界模糊/越界/缺失维度。最后给出综合评定。`,
       [{ role: 'user', content: '请审查以上语料。' }],
