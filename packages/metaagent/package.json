@@ -1,0 +1,28 @@
+{
+  "name": "@exomind/metaagent",
+  "version": "5.8.0",
+  "description": "元智能体 — 引导完成 P0→N15 态控设计流程的 AI Agent",
+  "type": "module",
+  "main": "src-v5.8/index.js",
+  "exports": {
+    ".": "./src-v5.8/index.js",
+    "./state-machine": "./src-v5.8/state-machine.js",
+    "./scheduler": "./src-v5.8/scheduler.js",
+    "./context-manager": "./src-v5.8/context-manager.js",
+    "./tool-registry": "./src-v5.8/tool-registry.js",
+    "./contract-store": "./src-v5.8/contract-store.js",
+    "./tunables": "./src-v5.8/tunables.js"
+  },
+  "scripts": {
+    "start": "node src-v5.8/index.js",
+    "validate": "node -e \"import('./src-v5.8/l2-l3-validator.js').then(m => m.quickValidate('../../MetaAgent/docs/l3-v5.8').then(r => console.log(JSON.stringify(r, null, 2))))\""
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["metaagent", "态控架构", "ai-agent", "design-flow"],
+  "license": "MIT"
+}
