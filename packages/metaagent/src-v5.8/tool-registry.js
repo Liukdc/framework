@@ -4,6 +4,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+/** 宪法文本缓冲区上限（可通过 maxContextTokens tunable 调优） */
+const CONSTITUTION_BUFFER_LIMIT = 4096;
+
 /** DET 工具：确定性操作，模型通过 function calling 调用 */
 const DET_TOOLS = {
   // 写盘
@@ -146,7 +149,7 @@ const OPTIONAL_TOOLS = {
     },
     handler: async (args, ctx) => {
       const text = ctx.getConstitution(args.intent);
-      return { constitution: text.slice(0, 4096), truncated: text.length > 4096 };
+      return { constitution: text.slice(0, CONSTITUTION_BUFFER_LIMIT), truncated: text.length > CONSTITUTION_BUFFER_LIMIT };
     },
   },
 };

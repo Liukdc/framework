@@ -1,0 +1,54 @@
+{
+  "timestamp": "2026-07-20T05:11:14.400Z",
+  "verdict": "READY",
+  "static": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "checks": [
+      {
+        "check": "magic-numbers",
+        "pass": true,
+        "detail": "无硬编码阈值",
+        "issues": []
+      },
+      {
+        "check": "cjs-require",
+        "pass": true,
+        "detail": "无CJS残留",
+        "issues": []
+      },
+      {
+        "check": "inline-prompt",
+        "pass": true,
+        "detail": "scheduler.js 正确委托 context-manager 拼接"
+      },
+      {
+        "check": "l3-json-validity",
+        "pass": true,
+        "detail": "全部 9 个 JSON 有效",
+        "issues": []
+      },
+      {
+        "check": "tunable-declaration",
+        "pass": true,
+        "detail": "25/25 参数声明"
+      },
+      {
+        "check": "constitution-references",
+        "pass": true,
+        "detail": "宪法加载器和索引均存在"
+      }
+    ]
+  },
+  "simulate": {
+    "passed": 7,
+    "failed": 0,
+    "total": 7
+  },
+  "mechanisms": {
+    "passed": 11,
+    "failed": 0,
+    "total": 11
+  }
+}
