@@ -184,6 +184,32 @@ export class MetaAgent {
   }
 }
 
+/** Mock 适配器——无 API key 时降级，用于 CI / 离线测试 */
+class MockAdapter {
+  constructor() { this._callCount = 0; }
+  buildAnalyzingPrompt(input, doList) {
+    return { model: 'mock', messages: [{ role: 'system', content: 'mock' }, { role: 'user', content: input }] };
+  }
+  async _call() { this._callCount++; return { choices: [{ message: { content: 'A' }, logprobs: { content: [{ token: 'A', logprob: -0.1 }] } }] }; }
+  parseAnalyzingResult(result) {
+    const choice = result.choices?.[0];
+    if (!choice) return { letter: 'A', probability: 0.9 };
+    const letter = (choice.message?.content || 'A').trim().charAt(0).toUpperCase();
+    let prob = 0;
+    if (choice.logprobs?.content?.[0]?.logprob !== undefined) prob = Math.exp(choice.logprobs.content[0].logprob);
+    return { letter, probability: prob || 0.9, raw: choice.message?.content };
+  }
+  buildInSessionPrompt() { return { model: 'mock', messages: [] }; }
+  async callInSession() { return { choices: [{ message: { content: 'turnType=reply\n\nMock response. Mock 模式运行正常。', tool_calls: [] } }] }; }
+  async callCodeModel() { return this.callInSession(); }
+  parseInSessionResult(result) {
+    const c = result.choices?.[0]?.message?.content || '';
+    const m = c.match(/turnType[=:]\s*['"]?(\w+)['"]?/i);
+    return { content: c, turnType: m?.[1] || 'reply', toolCalls: [] };
+  }
+  _describeIntent(intent) { return intent; }
+}
+
 /**
  * SDK 工厂：一句创建，给出 L3 配置包即可跑
  * @example
@@ -192,7 +218,13 @@ export class MetaAgent {
  *   const resp = await agent.sendMessage('帮我记一笔账');
  */
 export async function createAgent(options = {}) {
+  const hasApiKey = options.apiKey || process.env.DEEPSEEK_API_KEY;
   const agent = new MetaAgent(options);
+  // 无 API key → 注入 mock adapter 后初始化，避免 scheduler 持旧引用
+  if (!hasApiKey) {
+    agent._adapter = new MockAdapter();
+    console.warn('[createAgent] 无 API Key，降级为 mock 模式');
+  }
   await agent.init();
   return agent;
 }
