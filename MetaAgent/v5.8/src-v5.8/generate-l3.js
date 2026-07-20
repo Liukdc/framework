@@ -70,39 +70,35 @@ if (input) {
 `, 'utf-8');
   console.log('  ✓ index.js (SDK 入口)');
 
-  // 补全：网页界面（双击 index.html 即用）
+  // 补全：网页界面——通用聊天框，加载本地 L3 配置
   writeFileSync(join(OUT, 'index.html'), `<!DOCTYPE html>
-<html lang="zh"><head><meta charset="UTF-8"><title>我的智能体</title>
-<style>body{font-family:system-ui;max-width:600px;margin:20px auto;padding:0 16px;background:#1a1a2e;color:#eee}
-h1{text-align:center;color:#e94560;font-size:1.4em}
-#chat{background:#16213e;border-radius:12px;padding:16px;min-height:300px;max-height:60vh;overflow-y:auto;margin-bottom:12px}
-.msg{margin:8px 0;padding:10px 14px;border-radius:10px;max-width:85%}
-.u{background:#e94560;color:#fff;margin-left:auto}
-.a{background:#0f3460;margin-right:auto}
-.i{font-size:.7em;color:#aaa;margin-bottom:4px}
-#b{display:flex;gap:8px}
-#b input{flex:1;padding:12px;border:none;border-radius:8px;background:#0f3460;color:#fff;font-size:1em}
-#b button{padding:12px 20px;background:#e94560;color:#fff;border:none;border-radius:8px;font-size:1em}
-#s{text-align:center;color:#888;font-size:.8em;margin:8px 0}</style>
+<html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>我的智能体</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui;background:#1a1a2e;color:#eee;height:100dvh;display:flex;flex-direction:column;max-width:500px;margin:0 auto}header{background:#16213e;padding:12px 16px;border-bottom:1px solid #0f3460;text-align:center}h1{font-size:1em;color:#e94560}#chat{flex:1;overflow-y:auto;padding:12px}.m{display:flex;margin:8px 0}.m.u{justify-content:flex-end}.m .b{padding:10px 14px;border-radius:12px;max-width:80%;word-break:break-word;line-height:1.5}.m.u .b{background:#e94560;color:#fff}.m.a .b{background:#0f3460}.m .l{font-size:.65em;color:#888;margin-bottom:3px}#bar{display:flex;padding:10px;gap:8px;background:#16213e}#bar input{flex:1;padding:10px 14px;border:none;border-radius:20px;background:#0f3460;color:#fff;font-size:.95em;outline:none}#bar button{width:40px;height:40px;border:none;border-radius:50%;background:#e94560;color:#fff;font-size:1.2em;cursor:pointer}#empty{text-align:center;color:#555;padding:40px 0}</style>
 <script type="importmap">{"imports":{"metaagent-v5":"https://esm.sh/metaagent-v5"}}</script></head><body>
-<h1>🤖 我的智能体</h1><div id="chat"></div>
-<div id="b"><input id="m" placeholder="输入指令..." autofocus><button onclick="S()">发送</button></div>
-<div id="s">加载中...</div>
+<header><h1>🤖 我的智能体</h1></header>
+<div id="chat"><div id="empty">你好！说说你想做什么</div></div>
+<div id="bar"><input id="in" placeholder="输入指令..." autofocus><button onclick="S()">↑</button></div>
 <script type="module">
 import{createAgent}from'metaagent-v5';
-window.A=await createAgent({l3Path:'./l3-v5.8'});await window.A.startSession('web');
-document.getElementById('s').textContent='就绪';
-window.S=async()=>{let i=document.getElementById('m'),t=i.value.trim();if(!t)return;i.value='';
-let d=document.getElementById('chat'),e=document.createElement('div');e.className='msg u';e.textContent=t;d.appendChild(e);
-document.getElementById('s').textContent='思考中...';
-try{let r=await window.A.sendMessage(t);e=document.createElement('div');e.className='msg a';
-e.innerHTML='<div class=i>['+r.intent+']</div>'+r.content.replace(/\\n/g,'<br>');d.appendChild(e)}
-catch(x){e=document.createElement('div');e.className='msg a';e.textContent='出错了';d.appendChild(e)}
-document.getElementById('s').textContent='就绪';d.scrollTop=d.scrollHeight};
-document.getElementById('m').addEventListener('keydown',e=>{if(e.key==='Enter')window.S()});
+const APIKEY = localStorage.getItem('apikey') || '';
+window.agent = await createAgent({ l3Path:'./l3-v5.8', apiKey:APIKEY });
+await window.agent.startSession('ui');
+document.getElementById('empty').textContent = APIKEY ? '真模型就绪' : 'Mock 模式 · 粘 API key 切换真模型';
+window.S = async () => {
+  const el=document.getElementById('in'), t=el.value.trim(); if(!t)return; el.value='';
+  document.getElementById('empty')?.remove();
+  const c=document.getElementById('chat');
+  let d=document.createElement('div');d.className='m u';d.innerHTML='<div class=b>'+t+'</div>';c.appendChild(d);
+  const r=await window.agent.sendMessage(t);
+  d=document.createElement('div');d.className='m a';
+  d.innerHTML='<div class=b><div class=l>['+r.intent+']</div>'+r.content.replace(/\\n/g,'<br>')+'</div>';
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+};
+document.getElementById('in').addEventListener('keydown',e=>{if(e.key=='Enter')S()});
+window.setKey = k => { localStorage.setItem('apikey',k); location.reload(); };
 </script></body></html>
 `, 'utf-8');
-  console.log('  ✓ index.html (网页界面——双击即用)');
+  console.log('  ✓ index.html (双击即用——通用智能体界面)');
 
   // 检查产出
   const dir = join(OUT, 'l3-v5.8');
