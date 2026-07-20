@@ -32,6 +32,7 @@ function mockStore() {
     appendConversation: async () => {},
     appendSegmentBoundary: async () => {},
     appendTopicEvent: async () => {},
+    getTopicHistoryByIntent: async () => null,
     writeOutput: async () => {},
   };
 }

@@ -1,0 +1,1 @@
+{"doList":[{"intent":"record","taskType":"field_based","topicEvolutionEnabled":false},{"intent":"query","taskType":"topic_based","topicEvolutionEnabled":true},{"intent":"other","taskType":"topic_based","topicEvolutionEnabled":true}]}
