@@ -203,6 +203,11 @@ export class ContractStore {
     return this._db.prepare(`SELECT * FROM topic_evolution WHERE topic_id=? ORDER BY created_at DESC`).all(topicId);
   }
 
+  /** 按 session+intent 查最近 topicId（跨会话恢复） */
+  getTopicHistoryByIntent(sessionId, intent) {
+    return this._db.prepare(`SELECT * FROM topic_evolution WHERE session_id=? AND intent=? ORDER BY created_at DESC LIMIT 1`).get(sessionId, intent);
+  }
+
   // === Outputs ===
 
   writeOutput(sessionId, intent, outputName, importance, content) {

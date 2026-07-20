@@ -102,9 +102,15 @@ export class Scheduler {
       await this._store.updateSessionState(this._sessionId, STATES.IN_SESSION, intent);
       this._telemetry.recordTransition('ANALYZING', this._sm.fullState);
 
-      // 初始化 topicId（topic_based 意图）
+      // 初始化 topicId（topic_based 意图）——优先从历史恢复，支持跨会话关联
       if (!this._topicId && this._sm.taskType === 'topic_based' && intent !== 'other') {
-        this._topicId = `${intent}-${Date.now()}`;
+        // 查最近一次同 intent 的 topicId
+        const recent = await this._store.getTopicHistoryByIntent(this._sessionId, intent);
+        if (recent?.topic_id) {
+          this._topicId = recent.topic_id;
+        } else {
+          this._topicId = `${intent}-${Date.now()}`;
+        }
       }
 
       // ═══ Layer 2: IN_SESSION - 三层注入 + tool calling 循环 ═══

@@ -1,6 +1,6 @@
 // @MetaAgent v5.8 — test-n12-n14.js
-// 测试 N12→N13→N14 代码生成链路（含 writeOutput 落盘）
-import { MetaAgent } from './index.js';
+// 测试 N12→N13→N14 代码生成链路（含 mock 降级）
+import { createAgent } from './index.js';
 
 // N12 需要 L2 拆包上下文；N13 需要 N12 产出做骨架生成；N14 审 N13
 const STEPS = [
@@ -15,8 +15,7 @@ const STEPS = [
 ];
 
 async function main() {
-  const meta = new MetaAgent();
-  await meta.init();
+  const meta = await createAgent();
   const sessionId = `n12-n14-${Date.now()}`;
   const initResp = await meta.startSession(sessionId);
 
