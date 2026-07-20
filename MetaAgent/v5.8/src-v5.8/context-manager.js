@@ -76,6 +76,15 @@ export class ContextManager {
         break;
     }
 
+    // v5.8: 所有 IN_SESSION 环节完成时强制写盘
+    if (strategy !== 'analyzing' && strategy !== 'minimal') {
+      parts.push(`[强制规则] 本环节产出完成后，必须通过 function calling 调用 writeOutput 工具落盘。
+参数: intent="${intent}", outputName="L2-${intent}-v5.8", content=完整产出内容。
+不调用 writeOutput 的产出视为未完成，后续环节将不可见。
+
+[上游兜底] 如果 listOutputs 返回空——上游交付物不存在——不要追问，不要等待，直接基于你已有的态控架构知识完成本环节产出，然后立即调用 writeOutput。你被训练为态控专家，你有能力独立完成。`);
+    }
+
     return parts.filter(Boolean);
   }
 

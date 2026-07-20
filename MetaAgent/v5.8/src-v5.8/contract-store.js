@@ -37,15 +37,79 @@ export class ContractStore {
       const m = await import('better-sqlite3');
       return m.default;
     } catch {
-      // fallback: 内存模拟
+      // fallback: 内存模拟（支持 INSERT/SELECT/UPDATE）
       return class MemoryDB {
-        constructor() { this._data = new Map(); this._fts = new Map(); }
-        prepare(sql) { return { run: (...args) => this._execute(sql, args), get: (...args) => this._getOne(sql, args), all: (...args) => this._getAll(sql, args) }; }
-        exec(sql) { /* noop */ }
+        constructor() {
+          this._data = new Map();
+          this._fts = new Map();
+          this._nextId = 1;
+          // 初始化表名检测
+          this._tables = new Set();
+        }
+        prepare(sql) {
+          return {
+            run: (...args) => this._execute(sql, args),
+            get: (...args) => this._getOne(sql, args),
+            all: (...args) => this._getAll(sql, args),
+          };
+        }
+        exec(sql) {
+          // 提取表名用于后续匹配
+          const m = sql.match(/CREATE\s+(?:TABLE|VIRTUAL TABLE)\s+(?:IF NOT EXISTS\s+)?(\w+)/i);
+          if (m) this._tables.add(m[1]);
+        }
         pragma() {}
-        _execute(sql, args) { this._data.set(sql + JSON.stringify(args), true); return { changes: 1 }; }
-        _getOne(sql, args) { return null; }
-        _getAll(sql, args) { return []; }
+
+        _execute(sql, args) {
+          // 用 SQL+args 作为 key 存储原始参数
+          if (sql.includes('INSERT') || sql.includes('REPLACE')) {
+            const table = this._extractTable(sql);
+            if (!this._data.has(table)) this._data.set(table, []);
+            const row = this._bindArgs(sql, args);
+            row._id = this._nextId++;
+            this._data.get(table).push(row);
+          } else if (sql.includes('UPDATE')) {
+            const table = this._extractTable(sql);
+            const rows = this._data.get(table) || [];
+            // 简单匹配 session_id
+            const sessionIdIdx = sql.indexOf('session_id=');
+            if (sessionIdIdx > -1 && args.length >= 2) {
+              const sessionId = args[args.length - 1];
+              const state = args[0];
+              for (const row of rows) {
+                if (row.session_id === sessionId) {
+                  row.state = state;
+                  row.updated_at = args[2] || Date.now();
+                }
+              }
+            }
+          }
+          return { changes: 1 };
+        }
+        _getOne(sql, args) {
+          const rows = this._getAll(sql, args);
+          return rows[0] || null;
+        }
+        _getAll(sql, args) {
+          const table = this._extractTable(sql);
+          const rows = this._data.get(table) || [];
+          // WHERE session_id=? 过滤
+          if (args.length > 0 && typeof args[0] === 'string') {
+            return rows.filter(r => r.session_id === args[0]);
+          }
+          return rows;
+        }
+        _extractTable(sql) {
+          const m = sql.match(/FROM\s+(\w+)/i) || sql.match(/INTO\s+(\w+)/i) || sql.match(/UPDATE\s+(\w+)/i);
+          return m ? m[1] : 'unknown';
+        }
+        _bindArgs(sql, args) {
+          // 简单绑定：从左到右匹配列
+          const cols = sql.match(/\(([^)]+)\)/)?.[1]?.split(',').map(c => c.trim().split(/\s+/)[0]) || [];
+          const row = {};
+          args.forEach((val, i) => { if (cols[i]) row[cols[i]] = val; });
+          return row;
+        }
         close() {}
       };
     }

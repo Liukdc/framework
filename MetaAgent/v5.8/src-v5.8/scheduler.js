@@ -171,21 +171,25 @@ export class Scheduler {
       }
 
       // ═══ 路由 ═══
-      const routeKey = parsed.turnType === 'complete'
+      // turnType 为 null 且模型已产出内容 → 默认 reply（等待后续输入）
+      const effectiveTurnType = parsed.turnType || (parsed.content?.length > 10 ? 'reply' : null);
+      const routeKey = effectiveTurnType === 'complete'
         ? `turnType=complete`
-        : parsed.turnType === 'off-task'
+        : effectiveTurnType === 'off-task'
           ? `turnType=off-task`
-          : parsed.turnType === 'giveup'
+          : effectiveTurnType === 'giveup'
             ? `turnType=giveup`
-            : `intent=${intent}`;
+            : effectiveTurnType === 'reply'
+              ? `intent=${intent}`
+              : `intent=${intent}`;
 
       const route = this._rt.match(this._sm.fullState, routeKey);
       if (route) {
         // 处理 topicEvolution
         if (route.topicEvolutionEventAppended) {
-          const changeLevel = parsed.turnType === 'complete' ? 'checkpoint'
-            : parsed.turnType === 'off-task' ? 'active'
-            : parsed.turnType === 'giveup' ? 'abandoned' : 'minor';
+          const changeLevel = effectiveTurnType === 'complete' ? 'checkpoint'
+            : effectiveTurnType === 'off-task' ? 'active'
+            : effectiveTurnType === 'giveup' ? 'abandoned' : 'minor';
           await this._store.appendTopicEvent(this._sessionId, this._topicId || `${intent}-${Date.now()}`, intent, changeLevel);
         }
 

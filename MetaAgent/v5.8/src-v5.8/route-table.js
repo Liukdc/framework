@@ -28,8 +28,8 @@ export class RouteTable {
   _matchFrom(actualFrom, patternFrom) {
     if (actualFrom === patternFrom) return true;
     if (patternFrom.startsWith('IN_SESSION(') && actualFrom.startsWith('IN_SESSION(')) {
-      const patternType = patternFrom.match(/IN_SESSION\(([\w-]+)/)?.[1];
-      const actualIntent = actualFrom.match(/IN_SESSION\(([\w-]+)/)?.[1];
+      const patternType = patternFrom.match(/IN_SESSION\(([\w,-]+)/)?.[1];
+      const actualIntent = actualFrom.match(/IN_SESSION\(([\w,-]+)/)?.[1];
       if (patternType && actualIntent) {
         // 逗号分隔 → 枚举值绑定 (e.g. N11,N12)
         if (patternType.includes(',')) {
