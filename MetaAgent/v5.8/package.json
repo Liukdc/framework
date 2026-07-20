@@ -1,7 +1,7 @@
 {
   "name": "@exomind/metaagent",
   "version": "5.8.0",
-  "description": "元智能体 — 引导完成 P0→N15 态控设计流程的 AI Agent",
+  "description": "元智能体 SDK — 给定 L3 配置文件即可运行的态控架构 Agent 引擎",
   "type": "module",
   "main": "src-v5.8/index.js",
   "exports": {
@@ -11,11 +11,21 @@
     "./context-manager": "./src-v5.8/context-manager.js",
     "./tool-registry": "./src-v5.8/tool-registry.js",
     "./contract-store": "./src-v5.8/contract-store.js",
-    "./tunables": "./src-v5.8/tunables.js"
+    "./tunables": "./src-v5.8/tunables.js",
+    "./createAgent": "./src-v5.8/index.js"
   },
+  "files": [
+    "src-v5.8/",
+    "l3-v5.8/",
+    "constitutions/",
+    "README.md"
+  ],
   "scripts": {
     "start": "node src-v5.8/index.js",
-    "validate": "node -e \"import('./src-v5.8/l2-l3-validator.js').then(m => m.quickValidate('../../MetaAgent/docs/l3-v5.8').then(r => console.log(JSON.stringify(r, null, 2))))\""
+    "test": "node n14-toolchain/test-state-route.js",
+    "demo": "node src-v5.8/demo-fugui-xiaoan.js",
+    "sdk-test": "node src-v5.8/test-sdk-pipeline.js",
+    "cross-test": "node src-v5.8/test-cross-scenario.js"
   },
   "dependencies": {},
   "optionalDependencies": {
@@ -24,6 +34,12 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["metaagent", "态控架构", "ai-agent", "design-flow"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Liukdc/framework",
+    "directory": "MetaAgent/v5.8"
+  },
+  "keywords": ["metaagent", "态控架构", "ai-agent", "llm", "sdk", "state-machine", "design-flow"],
+  "author": "听风者",
   "license": "MIT"
 }
