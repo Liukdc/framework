@@ -1,6 +1,6 @@
 // @MetaAgent v5.8 — demo-fugui-xiaoan.js
 // 驱动 MetaAgent 为富贵小安走完 P0→N15 态控设计流程
-import { MetaAgent } from './index.js';
+import { createAgent } from './index.js';
 
 const STEPS = [
   // P0: 认知加载
@@ -42,8 +42,7 @@ const STEPS = [
 ];
 
 async function main() {
-  const meta = new MetaAgent();
-  await meta.init();
+  const meta = await createAgent();
 
   const initResp = await meta.startSession(`fugui-xiaoan-${Date.now()}`);
   console.log('════════════════════════════════════');

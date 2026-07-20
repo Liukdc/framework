@@ -62,6 +62,7 @@ async function main() {
       l3Path: l3Dir,
       apiKey: process.env.DEEPSEEK_API_KEY,
     });
+    await agent2.startSession('verify');
     const r2 = await agent2.sendMessage('帮我设计一个记账智能体');
     console.log(`  ✅ 加载成功 [${r2.state}] intent=${r2.intent}`);
     console.log(`     ${r2.content?.slice(0, 100)}`);
