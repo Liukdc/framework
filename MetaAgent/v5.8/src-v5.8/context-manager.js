@@ -83,6 +83,18 @@ export class ContextManager {
 不调用 writeOutput 的产出视为未完成，后续环节将不可见。
 
 [上游兜底] 如果 listOutputs 返回空——上游交付物不存在——不要追问，不要等待，直接基于你已有的态控架构知识完成本环节产出，然后立即调用 writeOutput。你被训练为态控专家，你有能力独立完成。`);
+
+      // N12/N13 特殊：产出物必须写为实际文件
+      if (intent === 'N12') {
+        parts.push(`[N12 文件落盘] L3拆包完成后，逐文件调用 writeFile：
+- boundary.json / states.json / transitions.json / routeTable.json / dataProtocol.json / scheduler.json / root-constitution.json / tunables.json / outputs.json
+每个文件单独调用一次 writeFile，filename=文件名, content=完整JSON内容。`);
+      }
+      if (intent === 'N13') {
+        parts.push(`[N13 文件落盘] 骨架代码完成后，逐文件调用 writeFile：
+- index.js / scheduler.js / state-machine.js / route-table.js / context-manager.js / deepseek-adapter.js / contract-store.js / tool-registry.js / tunables.js / telemetry.js / outputs-manager.js / l2-l3-validator.js / constitutions/loader.js
+每个文件单独调用一次 writeFile。`);
+      }
     }
 
     return parts.filter(Boolean);

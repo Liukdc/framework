@@ -6,12 +6,18 @@ import { join } from 'node:path';
 
 export class RouteTable {
   constructor(l3Path, stateMachine) {
-    const raw = readFileSync(join(l3Path, 'routeTable.json'), 'utf-8');
-    const data = JSON.parse(raw);
-    this._firstLayer = data.firstLayer;
-    this._secondLayer = data.secondLayer;
-    this._routes = data.routes;
     this._sm = stateMachine;
+    try {
+      const raw = readFileSync(join(l3Path, 'routeTable.json'), 'utf-8');
+      const data = JSON.parse(raw);
+      this._firstLayer = data.firstLayer || {};
+      this._secondLayer = data.secondLayer || [];
+      this._routes = data.routes || [];
+    } catch {
+      this._firstLayer = {};
+      this._secondLayer = [];
+      this._routes = [];
+    }
   }
 
   /** 按 from + contractOutKey 匹配路由 */

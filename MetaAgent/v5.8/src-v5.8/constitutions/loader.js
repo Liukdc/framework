@@ -8,7 +8,12 @@ import { fileURLToPath } from 'node:url';
 
 /** 加载环节宪法索引 */
 export function loadConstitutionIndex(l3Path) {
-  const raw = readFileSync(join(l3Path, 'constitutions', 'index.json'), 'utf-8');
+  const indexPath = join(l3Path, 'constitutions', 'index.json');
+  if (!existsSync(indexPath)) {
+    console.warn(`[constitution-loader] 宪法索引不存在: ${indexPath}，返回空宪法`);
+    return { constitutionFiles: {}, loadPaths: [], constitutionCount: 0 };
+  }
+  const raw = readFileSync(indexPath, 'utf-8');
   return JSON.parse(raw);
 }
 

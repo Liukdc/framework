@@ -16,7 +16,7 @@ const M1_PATTERNS = {
 };
 
 export class Scheduler {
-  constructor(stateMachine, routeTable, adapter, contextManager, toolRegistry, contractStore, outputsManager, telemetry, tunables, l3Path) {
+  constructor(stateMachine, routeTable, adapter, contextManager, toolRegistry, contractStore, outputsManager, telemetry, tunables, l3Path, outputDir) {
     this._sm = stateMachine;
     this._rt = routeTable;
     this._adapter = adapter;
@@ -27,6 +27,7 @@ export class Scheduler {
     this._telemetry = telemetry;
     this._tunables = tunables;
     this._l3Path = l3Path;
+    this._outputDir = outputDir || null;
 
     // 运行时上下文
     /** @type {string|null} 当前会话ID */
@@ -291,6 +292,7 @@ export class Scheduler {
       contractStore: this._store,
       importanceOf: (i) => this._outputs.importanceOf(i),
       getConstitution: (i) => this._cm._loadConstitution(i),
+      outputDir: this._outputDir,
       scheduler: this,           // v5.8 P0修复: 工具需写入 scheduler 字段
     };
     return this._tools.execute(name, args, ctx);

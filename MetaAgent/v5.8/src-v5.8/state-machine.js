@@ -39,15 +39,13 @@ export const EXECUTOR = {
 
 export class StateMachine {
   constructor(l3Path) {
-    // 加载 L3 配置
-    const statesRaw = readFileSync(join(l3Path, 'states.json'), 'utf-8');
-    const transitionsRaw = readFileSync(join(l3Path, 'transitions.json'), 'utf-8');
-    this._statesConfig = JSON.parse(statesRaw);
-    this._transitions = JSON.parse(transitionsRaw);
+    // 加载 L3 配置（容错：生成的不规范 JSON 不崩）
+    this._statesConfig = this._loadJson(join(l3Path, 'states.json'));
+    this._transitions = this._loadJson(join(l3Path, 'transitions.json'));
 
     // 构建 intent 索引
     this._subtypes = new Map();
-    for (const sub of this._statesConfig.inSessionSubtypes) {
+    for (const sub of (this._statesConfig.inSessionSubtypes || [])) {
       this._subtypes.set(sub.intent, sub);
     }
 
@@ -165,5 +163,10 @@ export class StateMachine {
   /** 是否为稳态容器 */
   isSteadyContainer() {
     return this._state === STATES.IN_SESSION;
+  }
+
+  _loadJson(path) {
+    try { return JSON.parse(readFileSync(path, 'utf-8')); }
+    catch { return {}; }
   }
 }

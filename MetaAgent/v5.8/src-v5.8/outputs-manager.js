@@ -6,13 +6,17 @@ import { join } from 'node:path';
 
 export class OutputsManager {
   constructor(l3Path) {
-    const raw = readFileSync(join(l3Path, 'outputs.json'), 'utf-8');
-    const data = JSON.parse(raw);
     this._byIntent = new Map();
-    for (const level of ['critical', 'high', 'normal']) {
-      for (const entry of data[level]) {
-        this._byIntent.set(entry.intent, { ...entry, level });
+    try {
+      const raw = readFileSync(join(l3Path, 'outputs.json'), 'utf-8');
+      const data = JSON.parse(raw);
+      for (const level of ['critical', 'high', 'normal']) {
+        for (const entry of data[level]) {
+          this._byIntent.set(entry.intent, { ...entry, level });
+        }
       }
+    } catch {
+      // outputs.json 可能由 N12 逐步生成，允许缺失
     }
   }
 

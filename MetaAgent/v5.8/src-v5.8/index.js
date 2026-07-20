@@ -37,6 +37,7 @@ export class MetaAgent {
   constructor(options = {}) {
     this._l3Path = options.l3Path || DEFAULT_L3_PATH;
     this._dbPath = options.dbPath || DEFAULT_DB_PATH;
+    this._outputDir = options.outputDir || null;
 
     // 参数
     const base = createDefaultTunables();
@@ -55,8 +56,11 @@ export class MetaAgent {
     this._store = new ContractStore(this._dbPath, this._tunables);
 
     // 加载 L3 boundary 供 adapter 生成 ANALYZING prompt 语义标签
-    const boundaryRaw = readFileSync(join(this._l3Path, 'boundary.json'), 'utf-8');
-    this._adapter = new DeepSeekAdapter(this._tunables, options.apiKey || null, JSON.parse(boundaryRaw).doList);
+    let doList = [];
+    try {
+      doList = JSON.parse(readFileSync(join(this._l3Path, 'boundary.json'), 'utf-8')).doList;
+    } catch { /* boundary.json 可能由 N12 逐步生成 */ }
+    this._adapter = new DeepSeekAdapter(this._tunables, options.apiKey || null, doList);
     this._telemetry = new Telemetry();
     this._constitutions = null;
     this._contextManager = null;
@@ -93,6 +97,7 @@ export class MetaAgent {
       this._telemetry,
       this._tunables,
       this._l3Path,
+      this._outputDir,
     );
 
     this._initialized = true;

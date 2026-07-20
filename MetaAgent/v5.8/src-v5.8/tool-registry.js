@@ -86,6 +86,31 @@ const DET_TOOLS = {
     },
   },
 
+  // v5.8: 写文件——N12/N13 产出落盘为实际 L3 JSON / JS 文件
+  writeFile: {
+    name: 'writeFile',
+    description: '将产出写入文件系统（N12拆包写L3 JSON，N13写骨架JS）',
+    parameters: {
+      type: 'object',
+      properties: {
+        filename:    { type: 'string', description: '文件名，如 boundary.json / scheduler.js' },
+        content:     { type: 'string', description: '文件完整内容' },
+        intent:      { type: 'string', description: '当前环节 intent' },
+      },
+      required: ['filename', 'content', 'intent'],
+    },
+    handler: async (args, ctx) => {
+      const { writeFileSync, mkdirSync, existsSync } = await import('node:fs');
+      const { join } = await import('node:path');
+      const outDir = ctx.outputDir || join(import.meta.dirname || '.', '..', 'agent-output');
+      const dir = args.filename.endsWith('.json') ? join(outDir, 'l3-v5.8') : outDir;
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      const filepath = join(dir, args.filename);
+      writeFileSync(filepath, args.content, 'utf-8');
+      return { success: true, path: filepath, size: args.content.length };
+    },
+  },
+
   // N2: 双角色信息隔离——角色一只注场景定义
   n2InjectRole1: {
     name: 'n2InjectRole1',
