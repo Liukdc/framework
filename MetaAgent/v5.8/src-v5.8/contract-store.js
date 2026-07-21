@@ -28,8 +28,17 @@ export class ContractStore {
       this._db.pragma('journal_mode = WAL');
     }
 
-    this._createTables();
+    // 先查 sessions 表是否存在 → 判断首次启动
+    const isFirstBoot = !this._tableExists('sessions');
+    if (isFirstBoot) {
+      console.log('[contractStore] 首次启动，开始建表...');
+      this._createTables();
+    } else {
+      console.log('[contractStore] 检测到已有数据库，验证表结构...');
+    }
+
     this._verifyAllTables();
+    if (isFirstBoot) this._initProject();
     return this;
   }
 
@@ -55,9 +64,11 @@ export class ContractStore {
           };
         }
         exec(sql) {
-          // 提取表名用于后续匹配
-          const m = sql.match(/CREATE\s+(?:TABLE|VIRTUAL TABLE)\s+(?:IF NOT EXISTS\s+)?(\w+)/i);
-          if (m) this._tables.add(m[1]);
+          // 多语句分割：按分号分隔每条 CREATE TABLE，分别注册表名
+          for (const stmt of sql.split(';')) {
+            const m = stmt.match(/CREATE\s+(?:TABLE|VIRTUAL TABLE)\s+(?:IF NOT EXISTS\s+)?(\w+)/i);
+            if (m) this._tables.add(m[1].toLowerCase());
+          }
         }
         pragma() {}
 
@@ -352,6 +363,24 @@ export class ContractStore {
     `);
   }
 
+  /** 检查表是否存在（兼容 better-sqlite3 和 MemoryDB fallback） */
+  _tableExists(name) {
+    // MemoryDB fallback: 检查 _tables Set
+    if (this._db._tables) return this._db._tables.has(name.toLowerCase());
+    // real SQLite: 查 sqlite_master
+    try {
+      const row = this._db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`).get(name);
+      return !!row;
+    } catch { return false; }
+  }
+
+  /** 初始化默认项目 */
+  _initProject() {
+    const now = new Date().toISOString();
+    this._db.prepare(`INSERT OR IGNORE INTO projectRegistry (projectId, projectName, userId, description, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)`).run('default', '默认项目', 'default', '首次启动自动创建', now, now);
+    this._db.prepare(`INSERT OR IGNORE INTO userLastProject (userId, projectId) VALUES (?, ?)`).run('default', 'default');
+  }
+
   /** 验证全部 21 张表是否存在 */
   _verifyAllTables() {
     const required = [
@@ -368,14 +397,13 @@ export class ContractStore {
     ];
     const missing = [];
     for (const table of required) {
-      try {
-        this._db.prepare(`SELECT 1 FROM ${table} LIMIT 1`).get();
-      } catch {
-        missing.push(table);
-      }
+      if (!this._tableExists(table)) missing.push(table);
     }
     if (missing.length > 0) {
       console.error(`[contractStore] ❌ 缺少 ${missing.length} 张表: ${missing.join(', ')}`);
+      if (missing.length === required.length) {
+        console.error('[contractStore] 致命：所有表都不存在。数据库文件可能损坏。');
+      }
     } else {
       console.log(`[contractStore] ✅ ${required.length} 张表全部就绪`);
     }
