@@ -119,82 +119,194 @@ export class ContractStore {
 
   _createTables() {
     this._db.exec(`
-      -- ═══ 会话（断点续接） ═══
+      -- ═══ P0: ANALYZING 契约副本（意图级纠错逃生舱） ═══
+      CREATE TABLE IF NOT EXISTS analyzing_contract_in (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL DEFAULT 'default',
+        rawInput TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS analyzing_contract_out (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL DEFAULT 'default',
+        choice TEXT,
+        logprobs TEXT,
+        intent TEXT,
+        inputNature TEXT,
+        inputNatureLogprobs TEXT,
+        extracted TEXT,
+        topicId TEXT,
+        createdAt TEXT NOT NULL
+      );
+
+      -- ═══ P1: 会话主表 ═══
       CREATE TABLE IF NOT EXISTS sessions (
         session_id TEXT PRIMARY KEY,
         state TEXT NOT NULL DEFAULT 'IDLE',
         current_intent TEXT,
         task_type TEXT,
         room_id TEXT,
+        project_id TEXT,
         created_at INTEGER,
         updated_at INTEGER,
         tunable_snapshot TEXT
       );
 
-      -- ═══ 全窗口房间状态索引（物化视图——跨房间意图识别） ═══
-      CREATE TABLE IF NOT EXISTS room_state_index (
-        room_id TEXT NOT NULL,
-        room_name TEXT NOT NULL,
-        intent TEXT NOT NULL,
-        task_type TEXT NOT NULL,
-        last_active_at INTEGER,
-        pending_count INTEGER DEFAULT 0,
-        completed_count INTEGER DEFAULT 0,
-        last_summary TEXT,
-        user_id TEXT,
-        PRIMARY KEY (user_id, room_id)
+      -- ═══ P2: topic_based 主题演化 ═══
+      CREATE TABLE IF NOT EXISTS topicEvolution (
+        topicId TEXT PRIMARY KEY,
+        userId TEXT NOT NULL DEFAULT 'default',
+        projectId TEXT NOT NULL DEFAULT 'default',
+        topicName TEXT NOT NULL,
+        stateSnapshot TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
       );
 
-      -- ═══ 房间对话日志（每房间独立，物理隔离） ═══
-      CREATE TABLE IF NOT EXISTS room_conversation_log (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        room_id TEXT NOT NULL,
-        session_id TEXT,
-        turn_index INTEGER,
-        role TEXT,
-        content TEXT,
-        turn_type TEXT,
-        created_at INTEGER
+      CREATE TABLE IF NOT EXISTS topicEvolutionEvent (
+        eventId TEXT PRIMARY KEY,
+        topicId TEXT NOT NULL,
+        nodeId TEXT NOT NULL,
+        turnType TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        stateChange TEXT,
+        askingField TEXT,
+        modelOutputSummary TEXT,
+        FOREIGN KEY (topicId) REFERENCES topicEvolution(topicId)
       );
 
-      -- ═══ 会话检查点（每房快照，支持断点续接） ═══
-      CREATE TABLE IF NOT EXISTS session_checkpoint (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        room_id TEXT NOT NULL,
-        session_id TEXT,
-        state TEXT,
+      CREATE TABLE IF NOT EXISTS topicEvolutionArchive (
+        archiveId TEXT PRIMARY KEY,
+        topicId TEXT NOT NULL,
+        eventId TEXT NOT NULL,
+        archiveType TEXT NOT NULL,
+        archivedAt TEXT NOT NULL
+      );
+
+      -- ═══ P3: 领域规则网络图 ═══
+      CREATE TABLE IF NOT EXISTS domainRules (
+        ruleId TEXT PRIMARY KEY,
+        content TEXT NOT NULL,
+        topicPath TEXT NOT NULL,
+        stepName TEXT,
+        source TEXT NOT NULL,
+        immutableLevel TEXT NOT NULL,
+        importance TEXT DEFAULT 'normal',
+        status TEXT DEFAULT 'active',
+        conditions TEXT,
+        edges TEXT,
+        version INTEGER DEFAULT 1,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS ruleCandidates (
+        candidateId TEXT PRIMARY KEY,
+        rule TEXT NOT NULL,
+        topicPath TEXT,
+        stepName TEXT,
+        evidenceCount INTEGER DEFAULT 0,
+        passCount INTEGER DEFAULT 0,
+        validationRate REAL DEFAULT 0,
+        status TEXT DEFAULT 'pending',
+        createdAt TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS ruleMiningQueue (
+        queueId TEXT PRIMARY KEY,
+        topicId TEXT,
+        stepName TEXT,
         intent TEXT,
-        task_type TEXT,
-        contract_in TEXT,
-        contract_out TEXT,
-        snapshot_at INTEGER
+        checkpointAt TEXT NOT NULL,
+        status TEXT DEFAULT 'pending'
       );
 
-      -- ═══ 契约演化（field_based 字段级变更记录） ═══
-      CREATE TABLE IF NOT EXISTS contract_evolution (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT,
+      -- ═══ P4: field_based 进度检查点 ═══
+      CREATE TABLE IF NOT EXISTS sessionCheckpoints (
+        userId TEXT NOT NULL DEFAULT 'default',
+        projectId TEXT NOT NULL DEFAULT 'default',
+        lastCompletedStep TEXT NOT NULL,
+        completedSteps TEXT NOT NULL,
+        stepSnapshots TEXT NOT NULL,
+        resumedAt TEXT,
+        expiredAt TEXT,
+        ttl INTEGER DEFAULT 604800,
+        PRIMARY KEY (userId, projectId)
+      );
+
+      -- ═══ P5: 房间对话日志（每房间独立，物理隔离） ═══
+      CREATE TABLE IF NOT EXISTS roomConversationLog (
+        logId TEXT PRIMARY KEY,
+        userId TEXT NOT NULL DEFAULT 'default',
+        projectId TEXT NOT NULL DEFAULT 'default',
+        roomId TEXT NOT NULL,
+        roomName TEXT,
+        importance TEXT DEFAULT 'normal',
+        turnNumber INTEGER NOT NULL,
+        userMessage TEXT,
+        modelOutput TEXT,
+        turnType TEXT,
+        askingField TEXT,
+        createdAt TEXT NOT NULL,
+        segmentType TEXT DEFAULT 'full',
+        relatedOutputId TEXT,
+        summaryImportance TEXT,
+        originalTurnRange TEXT
+      );
+
+      -- ═══ P6: 对话全量备份（v5.8 分段保留） ═══
+      CREATE TABLE IF NOT EXISTS conversationArchive (
+        archiveId TEXT PRIMARY KEY,
+        userId TEXT NOT NULL DEFAULT 'default',
+        projectId TEXT NOT NULL DEFAULT 'default',
+        roomId TEXT NOT NULL,
+        turnNumber INTEGER NOT NULL,
+        userMessage TEXT,
+        modelOutput TEXT,
+        turnType TEXT,
+        askingField TEXT,
+        createdAt TEXT NOT NULL,
+        archivedAt TEXT NOT NULL,
+        relatedOutputId TEXT
+      );
+
+      -- ═══ P7: 全窗口房间状态索引（物化视图） ═══
+      CREATE TABLE IF NOT EXISTS roomStateIndex (
+        userId TEXT NOT NULL DEFAULT 'default',
+        roomId TEXT NOT NULL,
+        projectId TEXT NOT NULL DEFAULT 'default',
+        roomName TEXT NOT NULL,
+        intent TEXT,
+        taskType TEXT,
+        lastActiveAt TEXT NOT NULL,
+        pendingCount INTEGER DEFAULT 0,
+        completedCount INTEGER DEFAULT 0,
+        lastSummary TEXT,
+        PRIMARY KEY (userId, roomId, projectId)
+      );
+
+      -- ═══ P8: 产出物总索引 ═══
+      CREATE TABLE IF NOT EXISTS outputRegistry (
+        outputId TEXT PRIMARY KEY,
+        roomId TEXT NOT NULL,
+        projectId TEXT NOT NULL DEFAULT 'default',
+        roomName TEXT NOT NULL,
         intent TEXT NOT NULL,
-        field_name TEXT NOT NULL,
-        old_value TEXT,
-        new_value TEXT,
-        change_level TEXT NOT NULL,
-        change_level_reason TEXT,
-        created_at INTEGER
+        taskType TEXT NOT NULL,
+        outputType TEXT NOT NULL,
+        outputPath TEXT NOT NULL,
+        outputName TEXT NOT NULL,
+        outputSummary TEXT,
+        keywords TEXT,
+        fileSize INTEGER,
+        createdAt TEXT NOT NULL,
+        createdBy TEXT NOT NULL,
+        status TEXT DEFAULT 'active',
+        metadata TEXT
       );
 
-      -- ═══ 产出注册表（每房间产出物索引） ═══
-      CREATE TABLE IF NOT EXISTS output_registry (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        room_id TEXT NOT NULL,
-        output_name TEXT NOT NULL,
-        output_type TEXT NOT NULL,
-        importance TEXT NOT NULL,
-        written_at INTEGER,
-        content_preview TEXT
-      );
-
-      -- ═══ 产出物（关键交付物落盘 + 进度追踪） ═══
+      -- ═══ P9: 产出物（轻量版，进度追踪用） ═══
       CREATE TABLE IF NOT EXISTS outputs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         session_id TEXT,
@@ -206,19 +318,22 @@ export class ContractStore {
         written_at INTEGER
       );
 
-      -- ═══ 主题演化（topic_based 专属） ═══
-      CREATE TABLE IF NOT EXISTS topic_evolution (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT,
-        topic_id TEXT NOT NULL,
-        intent TEXT NOT NULL,
-        change_level TEXT NOT NULL,
-        state_snapshot TEXT,
-        created_at INTEGER,
-        UNIQUE(session_id, topic_id, change_level)
+      -- ═══ P10: 项目隔离 ═══
+      CREATE TABLE IF NOT EXISTS projectRegistry (
+        projectId TEXT PRIMARY KEY,
+        projectName TEXT NOT NULL,
+        userId TEXT NOT NULL DEFAULT 'default',
+        description TEXT,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
       );
 
-      -- ═══ 对话日志（全局审计，保留兼容） ═══
+      CREATE TABLE IF NOT EXISTS userLastProject (
+        userId TEXT NOT NULL DEFAULT 'default' PRIMARY KEY,
+        projectId TEXT NOT NULL
+      );
+
+      -- ═══ P11: 全局对话审计（保留兼容） ═══
       CREATE TABLE IF NOT EXISTS conversation_log (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         session_id TEXT,
@@ -228,18 +343,12 @@ export class ContractStore {
         turn_type TEXT,
         created_at INTEGER
       );
-    `);
 
-    // FTS5 全文搜索（可选）
-    if (getTunable(this._tunables, 'fts5Enabled')) {
-      try {
-        this._db.exec(`
-          CREATE VIRTUAL TABLE IF NOT EXISTS conversation_fts USING fts5(
-            session_id, role, content, tokenize='unicode61'
-          );
-        `);
-      } catch { /* FTS5 不可用时静默跳过 */ }
-    }
+      -- ═══ P12: 全文搜索 ═══
+      CREATE VIRTUAL TABLE IF NOT EXISTS conversationArchive_fts USING fts5(
+        userMessage, modelOutput, content='conversationArchive', content_rowid='archiveId'
+      );
+    `);
   }
 
   // === Session ===

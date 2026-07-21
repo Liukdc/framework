@@ -127,48 +127,29 @@ N16 → node n16-package.js --l3 ./l3-v5.8
 | n16-package | `node n16-package.js --l3 ./l3 --name a --out ./p` | 打包为 npm 可安装包 |
 | generate-l3 | `node generate-l3.js --out ./my-agent` | MetaAgent N12 自动拆包 |
 
-## 七、数据库表 (首次初始化生成全部 10 张表)
+## 七、数据库表 (首次初始化生成全部 21 张，对齐态控附录 v5.8)
 
-| 表 | 作用 |
-|----|------|
-| `sessions` | 会话——断点续接，记住用户在哪个房间 |
-| `room_state_index` | 全窗口房间状态——物化视图，跨房间意图识别 |
-| `room_conversation_log` | 房间对话——每房间独立，物理隔离 |
-| `session_checkpoint` | 检查点——每房快照，支持断点续接 |
-| `contract_evolution` | 契约演化——field_based 字段级变更记录 |
-| `output_registry` | 产出注册——每房间产出物索引 |
-| `outputs` | 产出物——进度追踪，关键交付物落盘 |
-| `topic_evolution` | 主题演化——topic_based 话题漂移 |
-| `conversation_log` | 全局对话——完整审计日志 |
-| `conversation_fts` | 全文搜索（可选） |
-
-```sql
-CREATE TABLE room_state_index (
-  room_id, room_name, intent, task_type,
-  last_active_at, pending_count, completed_count,
-  last_summary, user_id
-);
-
-CREATE TABLE room_conversation_log (
-  id, room_id, session_id, turn_index,
-  role, content, turn_type, created_at
-);
-
-CREATE TABLE session_checkpoint (
-  id, room_id, session_id, state, intent, task_type,
-  contract_in, contract_out, snapshot_at
-);
-
-CREATE TABLE contract_evolution (
-  id, session_id, intent, field_name,
-  old_value, new_value, change_level, change_level_reason, created_at
-);
-
-CREATE TABLE output_registry (
-  id, room_id, output_name, output_type,
-  importance, written_at, content_preview
-);
-```
+| 分组 | 表名 | 作用 |
+|------|------|------|
+| P0 契约 | `analyzing_contract_in` | ANALYZING 输入契约——支持意图纠错逃生舱 |
+| | `analyzing_contract_out` | ANALYZING 输出契约——choice/logprobs/intent/inputNature |
+| P1 会话 | `sessions` | 断点续接——记住用户房间+状态 |
+| P2 主题演化 | `topicEvolution` | topic_based 主题主表 |
+| | `topicEvolutionEvent` | 主题演化事件 |
+| | `topicEvolutionArchive` | 主题演化归档（minor_compacted/invalid） |
+| P3 领域规则 | `domainRules` | 领域规则网络图（L0-L3 权限） |
+| | `ruleCandidates` | 规则候选池（异步提炼） |
+| | `ruleMiningQueue` | 规则挖掘队列 |
+| P4 检查点 | `sessionCheckpoints` | field_based 进度检查点（7天 TTL） |
+| P5 对话 | `roomConversationLog` | 房间对话——每房间独立，分段保留 |
+| | `conversationArchive` | 对话全量备份——压缩后移入，FTS5 搜索 |
+| | `conversationArchive_fts` | 全文搜索索引 |
+| P6 房间状态 | `roomStateIndex` | 全窗口房间状态——物化视图 |
+| P7 产出 | `outputRegistry` | 产出物总索引 |
+| | `outputs` | 轻量产出（进度追踪） |
+| P8 项目 | `projectRegistry` | 项目隔离 |
+| | `userLastProject` | 用户默认项目 |
+| P9 审计 | `conversation_log` | 全局对话审计（保留兼容） |
 
 ## 八、状态转换简图
 
