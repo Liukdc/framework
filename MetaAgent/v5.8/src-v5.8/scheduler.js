@@ -399,17 +399,32 @@ export class Scheduler {
         return { state: STATES.ANALYZING, turnType: 'reply', content: '房间已切换，请选择新的节点（P0/N1~N15）。' };
       }
       case 'room_confirm': {
-        // 两步确认：① 模型自查 ② 状态机 DET 审查
+        // 两步确认：① 模型自查（按当前房间宪法） ② 状态机 DET 审查
         const intent = this._sm.currentIntent || 'P0';
         const roomName = intent;
 
-        // Step 1: 让模型自查当前房间任务完成度
-        const reviewPrompt = `你是「${roomName}」房间。用户发出了"房间落地"口令，表示希望确认并结束当前环节。
+        // 加载当前房间的环节宪法
+        let roomConstitution = '';
+        try {
+          const { readFileSync } = await import('node:fs');
+          const { join } = await import('node:path');
+          const constPath = join(this._l3Path, '..', 'constitutions', `${intent}_环节宪法_v5.8.md`);
+          roomConstitution = readFileSync(constPath, 'utf-8');
+        } catch {
+          // 宪法不存在 → 用通用审查
+          roomConstitution = `你是「${roomName}」房间。请检查本环节任务是否完成。`;
+        }
 
-请你根据环节宪法的要求，逐项检查：
+        // Step 1: 让模型按宪法自查
+        const reviewPrompt = `${roomConstitution}
+
+---
+用户发出了"房间落地"口令，表示希望确认并结束当前环节。
+
+请根据上面环节宪法的要求，逐项检查：
 1. 本环节的所有任务是否已完成？
 2. 是否有未回答的用户问题？
-3. 产出物是否齐全（如状态枚举、路由表、宪法文本等）？
+3. 产出物是否齐全？
 4. 是否还有需要用户确认的内容？
 
 请用简短的 JSON 回复：
@@ -479,19 +494,37 @@ export class Scheduler {
 
   /** INTENT_INIT: 初始项目选择意图识别（轻量，不走 logprobs） */
   async _analyzeInitIntent(userInput, projects) {
-    const list = projects.map((p,i) => {
-      return { letter: String.fromCharCode(65 + i), name: p.projectName };
-    });
+    // 加载 INIT 环节宪法
+    let initConstitution = '';
+    try {
+      const { readFileSync } = await import('node:fs');
+      const { join } = await import('node:path');
+      const constPath = join(this._l3Path, '..', 'constitutions', 'INIT_环节宪法_v5.8.md');
+      initConstitution = readFileSync(constPath, 'utf-8');
+    } catch {
+      // 宪法文件不存在时用内联兜底
+      initConstitution = '你是项目选择器。判断用户是要选择已有项目还是创建新项目。';
+    }
+
+    const list = projects.map((p,i) => ({
+      letter: String.fromCharCode(65 + i), name: p.projectName
+    }));
     const createOpt = String.fromCharCode(65 + projects.length);
 
-    const prompt = `你是项目选择器。${projects.length > 0 ? `已有项目：\n${list.map(l => `  ${l.letter}. ${l.name}`).join('\n')}\n` : ''}用户输入："${userInput}"
-任务：判断用户是要选择已有项目还是创建新项目。
+    const userPrompt = `${initConstitution}
+
+---
+已有项目：
+${list.map(l => `  ${l.letter}. ${l.name}`).join('\n') || '（无）'}
+
+用户输入："${userInput}"
+
 输出一个字母：
 ${list.map(l => `${l.letter} = 选择"${l.name}"`).join('\n')}
 ${createOpt} = 创建新项目`;
 
     try {
-      const result = await this._adapter.analyze(prompt, projects.length + 1);
+      const result = await this._adapter.analyze(userPrompt, projects.length + 1);
       const idx = result.letter.charCodeAt(0) - 65;
       if (idx >= 0 && idx < projects.length) {
         return { phase: 'select', project: projects[idx] };
