@@ -288,6 +288,15 @@ B = 选择第2个项目
               ? `intent=${intent}`
               : `intent=${intent}`;
 
+      // off-task：保存原房间的判断原因，传给 ANALYZING 重新识别
+      if (effectiveTurnType === 'off-task') {
+        this._offTaskContext = {
+          fromRoom: intent,
+          reason: parsed.content?.slice(0, 200) || '模型判断当前输入不匹配',
+          input: userInput,
+        };
+      }
+
       const route = this._rt.match(this._sm.fullState, routeKey);
       if (route) {
         // 处理 topicEvolution
@@ -386,7 +395,15 @@ B = 选择第2个项目
   // === ANALYZING ===
   async _analyzeIntent(userInput, trace) {
     const boundaryRaw = JSON.parse(readFileSync(join(this._l3Path, 'boundary.json'), 'utf-8'));
-    const params = this._adapter.buildAnalyzingPrompt(userInput, boundaryRaw.doList);
+
+    // 如果有 off-task 上下文（原房间的判断原因），注入到输入前面
+    let effectiveInput = userInput;
+    if (this._offTaskContext) {
+      effectiveInput = `[off-task relay] 上一房间「${this._offTaskContext.fromRoom}」判定此输入不匹配。原因：${this._offTaskContext.reason}\n\n用户原输入：${this._offTaskContext.input}`;
+      this._offTaskContext = null; // 只用一次
+    }
+
+    const params = this._adapter.buildAnalyzingPrompt(effectiveInput, boundaryRaw.doList);
 
     const result = await this._adapter._call(params);
     const { letter, probability } = this._adapter.parseAnalyzingResult(result);
