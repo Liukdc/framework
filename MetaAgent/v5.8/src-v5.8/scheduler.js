@@ -67,26 +67,45 @@ export class Scheduler {
     };
   }
 
-  /** DET 处理项目选择 */
+  /** 项目选择——轻量 ANALYZING，只用模型做这件事 */
   async handleProjectSelect(input) {
     const projects = this._store.listProjects();
-    const t = input.trim();
+    const list = projects.map((p,i) => `${i+1}. ${p.projectName}`).join('\n');
 
-    // 数字 → 按序号匹配
-    const n = parseInt(t);
-    if (n >= 1 && n <= projects.length) {
-      const p = projects[n-1];
-      return { phase: 'ready', projectId: p.projectId, projectName: p.projectName };
+    const prompt = `你是项目选择器。用户输入："${input}"
+${projects.length > 0 ? `已有项目：\n${list}\n` : ''}任务：判断用户是要「选择已有项目」还是「创建新项目」。
+输出一个字母：
+A = 选择第1个项目
+B = 选择第2个项目
+C = 选择第3个项目
+D = 创建新项目（输入中包含新项目名称）
+...以此类推
+${projects.length > 0 ? `最后一个字母 = 选择第${projects.length}个项目\n` : ''}最后一个字母 = 创建新项目`;
+
+    try {
+      const result = await this._adapter.analyze(prompt, projects.length + 1);
+      const choice = result.letter; // A/B/C/D...
+      const index = choice.charCodeAt(0) - 65; // A=0, B=1...
+
+      if (index >= 0 && index < projects.length) {
+        const p = projects[index];
+        return { phase: 'ready', projectId: p.projectId, projectName: p.projectName, matched: true };
+      }
+      // 创建新项目
+      return { phase: 'ready', projectId: null, projectName: input, isNew: true, needName: true };
+    } catch {
+      // 模型调用失败 → DET 兜底
+      const t = input.trim();
+      const n = parseInt(t);
+      if (n >= 1 && n <= projects.length) {
+        return { phase: 'ready', projectId: projects[n-1].projectId, projectName: projects[n-1].projectName };
+      }
+      const matched = projects.find(p => p.projectName.includes(t) || p.projectId.includes(t));
+      if (matched) {
+        return { phase: 'ready', projectId: matched.projectId, projectName: matched.projectName };
+      }
+      return { phase: 'ready', projectId: null, projectName: t, isNew: true, needName: true };
     }
-
-    // 名称匹配
-    const matched = projects.find(p => p.projectName === t || p.projectId === t);
-    if (matched) {
-      return { phase: 'ready', projectId: matched.projectId, projectName: matched.projectName };
-    }
-
-    // 没匹配 → 当成新项目名
-    return { phase: 'ready', projectId: t.replace(/[^a-zA-Z0-9_\u4e00-\u9fff-]/g, '_'), projectName: t, isNew: true };
   }
 
   /** 项目选定后，完成会话初始化 */
