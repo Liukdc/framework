@@ -122,6 +122,12 @@ export class MetaAgent {
     return this._scheduler.handleProjectSelect(input);
   }
 
+  /** 确认创建新项目 */
+  async confirmCreate(name) {
+    this._ensureInit();
+    return this._scheduler.confirmCreate(name);
+  }
+
   /** 项目选定后完成初始化 */
   async finishInit(projectId) {
     this._ensureInit();

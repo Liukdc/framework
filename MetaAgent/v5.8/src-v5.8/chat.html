@@ -94,9 +94,33 @@ window.S = async () => {
     try {
       const r = await fetch('/select-project', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({input:t})});
       const d = await r.json();
-      window._projectMode = null;
-      addMsg('a','',d.message);
-      document.getElementById('st').textContent = '就绪';
+      if (d.phase === 'confirm_create') {
+        // 需要二次确认
+        window._projectName = d.projectName;
+        addMsg('a','',d.message);
+      } else {
+        window._projectMode = null;
+        addMsg('a','',d.message);
+        document.getElementById('st').textContent = '就绪';
+      }
+    } catch(e) { addMsg('a','','连接失败'); }
+    btn.disabled=false; el.focus(); return;
+  }
+
+  // 确认创建阶段
+  if (window._projectName) {
+    document.getElementById('st').textContent='处理中...';
+    try {
+      const r = await fetch('/confirm-create', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:t})});
+      const d = await r.json();
+      window._projectName = null;
+      if (d.phase === 'cancel') {
+        addMsg('a','',d.message);
+      } else {
+        window._projectMode = null;
+        addMsg('a','',d.message);
+        document.getElementById('st').textContent = '就绪';
+      }
     } catch(e) { addMsg('a','','连接失败'); }
     btn.disabled=false; el.focus(); return;
   }

@@ -90,9 +90,13 @@ const server = createServer(async (req, res) => {
         if (!agent) { res.writeHead(400); res.end(JSON.stringify({error:'请先调用 /start'})); return; }
         const result = await agent.selectProject(input);
 
-        if (result.needName) {
+        if (result.needConfirm) {
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ phase: 'need_name', message: '请给你的新项目起个名字：' }));
+          res.end(JSON.stringify({
+            phase: 'confirm_create',
+            projectName: result.projectName,
+            message: `确认创建新项目「${result.projectName}」？输入名字确认，或输入"取消"。`
+          }));
           return;
         }
 
@@ -102,6 +106,34 @@ const server = createServer(async (req, res) => {
           phase: 'ready',
           projectName: result.projectName,
           message: '元智能体已就绪。说出你的智能体设计想法。'
+        }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
+  // POST /confirm-create — 确认创建新项目
+  if (req.method === 'POST' && url.pathname === '/confirm-create') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const { name } = JSON.parse(body);
+        if (!name || name === '取消') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ phase: 'cancel', message: '已取消。请重新选择或创建项目。' }));
+          return;
+        }
+        const result = await agent.confirmCreate(name);
+        await agent.finishInit(result.projectId);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          phase: 'ready',
+          projectName: result.projectName,
+          message: `项目「${result.projectName}」已创建。元智能体已就绪。`
         }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
