@@ -47,6 +47,20 @@ export class DETValidator {
   validate(intent, parsed, taskType) {
     const issues = [];
 
+    // === 根宪法第1条：isOnTask 前置检查 ===
+    // 模型必须在输出的 JSON 第一层包含 isOnTask 字段
+    if (parsed.isOnTask === false) {
+      return {
+        valid: false,
+        offTask: true,
+        message: `DET 拦截：模型判定当前输入与「${intent}」角色任务不匹配。转入 ANALYZING 重新识别。`,
+        issues: [{ field: 'isOnTask', issue: '模型主动判定 off-task', severity: 'block' }],
+      };
+    }
+    if (parsed.isOnTask === undefined) {
+      issues.push({ field: 'isOnTask', issue: '根宪法第1条要求输出 must start with { isOnTask: true/false }', severity: 'block' });
+    }
+
     // === 通用校验（所有房间都要过的） ===
 
     // 1. turnType 必须是合法值

@@ -38,13 +38,14 @@ export class ContextManager {
 
     switch (strategy) {
       case 'analyzing': {
+        parts.push(this._buildRootHeader());
         parts.push(this._buildAnalyzingSystem());
         break;
       }
       case 'topic_three_layer': {
+        // 根宪法第1条：isOnTask 强制前置
+        parts.push(this._buildRootHeader());
         const depth = getTunable(this._tunables, 'threeLayerInjectionDepth');
-
-        // 第一层：领域规则（环节宪法）
         parts.push(this._loadConstitution(intent));
 
         // 第二层：关联摘要（前一环节产出物 + 上下游依赖）
@@ -101,6 +102,15 @@ export class ContextManager {
   }
 
   // === ANALYZING system prompt ===
+  // === 根宪法第1条：角色匹配先行（isOnTask 强制前置） ===
+  _buildRootHeader() {
+    return `【根宪法第1条·角色匹配先行】
+你的所有回复必须以结构化 JSON 开头。第一个字段必须是 isOnTask：
+- 如果当前输入与你收到的角色任务有关 → {"isOnTask": true, ...继续...}
+- 如果当前输入与角色任务无关 → {"isOnTask": false}
+输出 isOnTask=false 后立即停止生成。DET 将截断并转入意图识别重新路由。`;
+  }
+
   _buildAnalyzingSystem() {
     return `你是意图识别器（ANALYZING环节）。将用户输入映射到以下意图之一。
 

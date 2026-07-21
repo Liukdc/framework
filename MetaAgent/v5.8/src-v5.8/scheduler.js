@@ -269,6 +269,17 @@ export class Scheduler {
 
       // ═══ Layer 3: DET 四项校验 ═══
       const detResult = this._detValidate(intent, parsed);
+
+      // 根宪法第1条：isOnTask=false → 立即路由 ANALYZING
+      if (detResult.offTask) {
+        this._offTaskContext = { fromRoom: intent, reason: detResult.message, input: userInput };
+        this._sm.transition(STATES.ANALYZING);
+        await this._store.updateSessionState(this._sessionId, STATES.ANALYZING);
+        this._telemetry.logEvent(trace, 'det_offtask_intercept', { fromRoom: intent });
+        this._telemetry.endTrace(trace, 'offtask_routed');
+        return { state: STATES.ANALYZING, turnType: 'off-task', content: detResult.message };
+      }
+
       if (!detResult.valid) {
         this._sm.transition(STATES.CLARIFYING, intent, this._sm.taskType);
         this._telemetry.logEvent(trace, 'det_reject', detResult);
