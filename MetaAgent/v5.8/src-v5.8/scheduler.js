@@ -29,7 +29,7 @@ export class Scheduler {
     this._tunables = tunables;
     this._l3Path = l3Path;
     this._outputDir = outputDir || null;
-    this._detValidator = new DETValidator(join(l3Path, '..', 'constitutions'));
+    this._detValidator = new DETValidator(join(l3Path, '..', 'constitutions'), this._tunables);
 
     // 运行时上下文
     /** @type {string|null} 当前会话ID */
@@ -229,17 +229,18 @@ export class Scheduler {
         }
         parsed = this._adapter.parseInSessionResult(rawResult);
 
-        // ═══ isOnTask:false → 立即路由 ANALYZING ═══
-        if (parsed.isOnTask === false) {
-          this._offTaskContext = { fromRoom: intent, reason: '模型判定 isOnTask=false', input: userInput };
+        const THRESHOLD = getTunable(this._tunables, 'relevanceThreshold');
+        // ═══ relevance < threshold → 路由 ANALYZING ═══
+        if (parsed.relevance !== null && parsed.relevance !== undefined && parsed.relevance < THRESHOLD) {
+          this._offTaskContext = { fromRoom: intent, reason: `relevance=${parsed.relevance}/100 < ${THRESHOLD}`, input: userInput };
           this._sm.transition(STATES.ANALYZING);
           await this._store.updateSessionState(this._sessionId, STATES.ANALYZING);
-          this._telemetry.logEvent(trace, 'isOnTask_false_routed');
+          this._telemetry.logEvent(trace, 'relevance_low_routed', { score: parsed.relevance, threshold: THRESHOLD });
           this._telemetry.endTrace(trace, 'offtask_routed');
-          return { state: STATES.ANALYZING, turnType: 'off-task', content: '检测到意图切换，正在重新识别...' };
+          return { state: STATES.ANALYZING, turnType: 'off-task', content: `检测到意图切换（匹配度=${parsed.relevance}/100，阈值=${THRESHOLD}），正在重新识别...` };
         }
 
-        // ═══ 情况4: isOnTask:true → 截断前缀，正常处理 ═══
+        // ═══ relevance >= threshold → 截断前缀，正常处理 ═══
 
         // 无工具调用 → 模型已完成回答
         if (parsed.toolCalls.length === 0) break;
@@ -282,7 +283,7 @@ export class Scheduler {
       // ═══ Layer 3: DET 四项校验 ═══
       const detResult = this._detValidate(intent, parsed);
 
-      // 根宪法第1条：isOnTask=false → 立即路由 ANALYZING
+      // 根宪法第1条：relevance < threshold(tunable) → 路由 ANALYZING
       if (detResult.offTask) {
         this._offTaskContext = { fromRoom: intent, reason: detResult.message, input: userInput };
         this._sm.transition(STATES.ANALYZING);

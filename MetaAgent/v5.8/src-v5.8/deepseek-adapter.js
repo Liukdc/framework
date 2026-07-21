@@ -158,21 +158,24 @@ export class DeepSeekAdapter {
         if (!clean.startsWith('{')) {
           reader.cancel();
           if (_retry < 1) {
-            console.log('[adapter] isOnTask 首字非{ ，流式打断重试');
+            console.log('[adapter] relevance 首字非{ ，流式打断重试');
             return this.callInSession(
               systemPrompt + '\n\n⚠️ 第一个字符必须是{', messages, tools, modelOverride, _retry + 1
             );
           }
-          // 重试耗尽 → 假装 isOnTask:true，原样返回
+          // 重试耗尽 → 当成 relevance>=20，原样返回
           return { choices: [{ message: { content: collected, tool_calls: [] } }] };
         }
 
-        // 等 isOnTask 值出现（{isOnTask: 共10字符，15字符足够解析）
+        // 等 relevance 值出现（{relevance: 共12字符，15字符足够）
         if (clean.length > 15) {
-          const mt = clean.match(/^{\s*['"]?isOnTask['"]?\s*:\s*(true|false)/);
-          if (mt && mt[1] === 'false') {
-            reader.cancel();
-            return { choices: [{ message: { content: '{isOnTask:false}', tool_calls: [] } }] };
+          const mt = clean.match(/^{\s*['"]?relevance['"]?\s*:\s*(\d{1,3})/);
+          if (mt) {
+            const score = parseInt(mt[1]);
+            if (score < getTunable(this._tunables, "relevanceThreshold"))) {
+              reader.cancel();
+              return { choices: [{ message: { content: '{relevance:' + score + '}', tool_calls: [] } }] };
+            }
           }
         }
       }
@@ -185,27 +188,16 @@ export class DeepSeekAdapter {
   /** 解析 IN_SESSION 结果 + isOnTask 前置拦截 */
   parseInSessionResult(result) {
     const choice = result.choices?.[0];
-    if (!choice) return { content: '', turnType: null, toolCalls: [], isOnTask: null };
-
+    if (!choice) return { content: '', turnType: null, toolCalls: [], relevance: null };
     const raw = choice.message?.content || '';
     const toolCalls = choice.message?.tool_calls || [];
-
-    // ═══ isOnTask 前置拦截 ═══
-    const onTaskResult = this._extractIsOnTask(raw);
-    // isOnTask:false → 截断，路由 ANALYZING
-    if (onTaskResult.status === 'false') {
-      return { content: '', turnType: 'off-task', toolCalls: [], isOnTask: false };
-    }
-    // isOnTask:true → 截断前缀，返回剩余内容
-    // isOnTask 缺失 → 原样通过（不重试，靠 recency bias 保证模型遵守）
-    const content = onTaskResult.rest || raw;
-
-    // 从 content 中提取 turnType
+    const relResult = this._extractRelevance(raw);
+    if (relResult.status === 'low') return { content: '', turnType: 'off-task', toolCalls: [], relevance: relResult.score };
+    const content = relResult.rest || raw;
     let turnType = null;
-    const match = content.match(/turnType\s*[=:]\s*['"]?(\w+(?:-\w+)?)['"]?/i);
-    if (match) turnType = match[1];
-
-    return { content, turnType, toolCalls, isOnTask: true };
+    const mt = content.match(/turnType\s*[=:]\s*['"]?(\w+(?:-\w+)?)['"]?/i);
+    if (mt) turnType = mt[1];
+    return { content, turnType, toolCalls, relevance: relResult.score ?? null }
   }
 
   /** 从模型输出开头提取 {isOnTask: true/false} */

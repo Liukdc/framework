@@ -5,9 +5,12 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { getTunable } from './tunables.js';
+
 export class DETValidator {
-  constructor(constitutionDir) {
+  constructor(constitutionDir, tunables = {}) {
     this._constDir = constitutionDir;
+    this._tunables = tunables;
   }
 
   /** 加载环节宪法的 validation 规则 */
@@ -47,18 +50,18 @@ export class DETValidator {
   validate(intent, parsed, taskType) {
     const issues = [];
 
-    // === 根宪法第1条：isOnTask 前置检查 ===
-    // 模型必须在输出的 JSON 第一层包含 isOnTask 字段
-    if (parsed.isOnTask === false) {
+    // === 根宪法第1条：relevance 评分前置检查 ===
+    const THRESHOLD = getTunable(this._tunables, 'relevanceThreshold');
+    if (parsed.relevance !== null && parsed.relevance !== undefined && parsed.relevance < THRESHOLD) {
       return {
         valid: false,
         offTask: true,
-        message: `DET 拦截：模型判定当前输入与「${intent}」角色任务不匹配。转入 ANALYZING 重新识别。`,
-        issues: [{ field: 'isOnTask', issue: '模型主动判定 off-task', severity: 'block' }],
+        message: `DET 拦截：模型对「${intent}」的匹配度评分=${parsed.relevance}/100（<${THRESHOLD}），转入 ANALYZING 重新识别。`,
+        issues: [{ field: 'relevance', issue: `评分 ${parsed.relevance} < ${THRESHOLD}`, severity: 'block' }],
       };
     }
-    if (parsed.isOnTask === undefined) {
-      issues.push({ field: 'isOnTask', issue: '根宪法第1条要求输出 must start with { isOnTask: true/false }', severity: 'block' });
+    if (parsed.relevance === undefined || parsed.relevance === null) {
+      issues.push({ field: 'relevance', issue: '根宪法第1条要求输出 {relevance: 0-100}', severity: 'warn' });
     }
 
     // === 通用校验（所有房间都要过的） ===

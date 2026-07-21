@@ -105,8 +105,9 @@ export class ContextManager {
   // === ANALYZING system prompt ===
   // === 根宪法第1条：角色匹配先行（isOnTask 强制前置） ===
   _buildRootHeader() {
-    return `⚠️ 不可跳过：你的回复第一个字符必须是 {，后面是 "isOnTask":true 或 "isOnTask":false。
-与任务有关 → {"isOnTask":true} 然后继续。无关 → {"isOnTask":false}。`;
+    return `⚠️ 你必须以 {relevance: 分数} 开头，给本次计算与角色任务的匹配度评分(0-100整数)。
+100=完全匹配，0=完全不匹配。>=20继续，<20停止。
+例：{relevance: 85}`;
   }
 
   _buildAnalyzingSystem() {

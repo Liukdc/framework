@@ -2,8 +2,8 @@
   "rootConstitution": [
     {
       "id": 1,
-      "name": "角色匹配先行",
-      "rule": "模型收到用户输入后，必须首先在结构化 JSON 中回答当前计算是否与角色任务有关。输出 { isOnTask: true } 并继续生成。否，输出 { isOnTask: false }。DET 截断后路由给 ANALYZING 重新识别。"
+      "name": "匹配度评分（relevance）",
+      "rule": "模型收到用户输入后，先对本次计算与角色任务的匹配度评分（0-100 整数，100=完全匹配，0=完全不匹配）。评分>=20继续，<20停止生成。DET 在评分<20时路由给 ANALYZING 重新识别。"
     },
     {
       "id": 2,
@@ -22,8 +22,8 @@
     }
   ],
   "architectureMechanisms": {
-    "M1": "四类口令(wake/exit/cancel/switch)+S3物理隔离+roomStateIndex",
-    "M2": "四项检查(不可缩减)+isOnTask DET 前置拦截",
+    "M1": "五类口令(wake/exit/cancel/switch/room_confirm)+S3物理隔离+roomStateIndex",
+    "M2": "四项检查(不可缩减)+relevance<20 DET 前置拦截",
     "M3": "det_overrides_model",
     "M4": "节点转换守卫"
   }

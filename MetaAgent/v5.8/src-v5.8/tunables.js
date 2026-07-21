@@ -19,6 +19,7 @@ export const TUNABLE_META = {
   retryOnFail:           { type: 'range',  min: 0,    max: 3,      default: 1 },
   debugMode:             { type: 'enum',   values: [true, false],  default: false },
   strictValidation:      { type: 'enum',   values: [true, false],  default: true },
+  relevanceThreshold:    { type: 'range',  min: 0,    max: 100,    default: 20 },    // v5.9 relevance 评分路由阈值
 
   // === Topic-based specific (4) ===
   topicConfirmRequired:  { type: 'enum',   values: [true, false],  default: true },   // 是否需要 WAITING_CONFIRM
