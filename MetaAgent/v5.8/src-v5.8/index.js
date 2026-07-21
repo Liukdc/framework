@@ -157,6 +157,20 @@ export class MetaAgent {
     return this._store.getOutputs(this._sessionId);
   }
 
+  /** 获取设计进度——哪些节点已完成，哪些进行中 */
+  async getProgress() {
+    const outputs = await this.getOutputs();
+    const completed = new Set(outputs.map(o => o.intent));
+    const nodeOrder = ['P0','N1','N2','N3','N4','N5','N6','N7','N8','N9','N10','N11','N12','N13','N14','N15'];
+    const done = [];
+    let next = null;
+    for (const n of nodeOrder) {
+      if (completed.has(n)) { done.push(n); }
+      else { next = n; break; }
+    }
+    return { done, next, total: nodeOrder.length };
+  }
+
   /** 获取 topicEvolution 历史 */
   async getTopicHistory() {
     this._ensureInit();

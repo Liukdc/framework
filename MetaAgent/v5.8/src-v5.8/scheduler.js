@@ -104,9 +104,18 @@ export class Scheduler {
       // logprobs 阈值裁决
       const threshold = getTunable(this._tunables, 'logprobsThreshold');
       if (probability < threshold) {
-        // 低置信度 → 不猜，直接问用户
+        // 低置信度 → 看进度，做建议
+        const progress = await this._getProgress();
+        let hint;
+        if (!progress.next) {
+          hint = '全部节点已完成。你是想修改某个节点的设计，还是开始新的设计？';
+        } else if (progress.done.length === 0) {
+          hint = '我们还没开始。你想设计一个什么样的智能体？';
+        } else {
+          hint = `你已完成 ${progress.done.join('→')}，接下来是 ${progress.next}。要继续吗？`;
+        }
         this._telemetry.endTrace(trace, 'low_confidence');
-        return { state: this._sm.fullState, turnType: 'ask', content: '我不太确定你的意思。你是想设计一个智能体，还是其他事情？' };
+        return { state: this._sm.fullState, turnType: 'ask', content: hint };
       }
       // 正常路由到对应 IN_SESSION
       const taskType = this._sm.getTaskType(intent);
@@ -248,6 +257,20 @@ export class Scheduler {
       this._telemetry.endTrace(trace, 'error');
       throw err;
     }
+  }
+
+  /** 获取设计进度——哪些节点已完成 */
+  async _getProgress() {
+    const outputs = await this._store.getOutputs(this._sessionId);
+    const completed = new Set(outputs.map(o => o.intent));
+    const nodeOrder = ['P0','N1','N2','N3','N4','N5','N6','N7','N8','N9','N10','N11','N12','N13','N14','N15'];
+    const done = [];
+    let next = null;
+    for (const n of nodeOrder) {
+      if (completed.has(n)) { done.push(n); }
+      else { next = n; break; }
+    }
+    return { done, next };
   }
 
   // === M1 元指令处理 ===
