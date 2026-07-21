@@ -1,47 +1,74 @@
 # MetaAgent v5.8
 
-引导完成 P0→N15 态控设计流程的 AI Agent——输入设计想法，输出可加载的 L3 配置包。
+引导完成态控设计流程的 AI Agent——输入设计想法，经过 INIT（项目选择）→ P0（认知加载）→ N1~N15 逐房间设计 → N16 打包交付，输出可安装的智能体。
 
 ## 快速开始
 
 ```bash
-# npm 安装后直接用
-npm install metaagent-v5
-```
+# 设 API Key
+$env:DEEPSEEK_API_KEY="sk-xxx"
 
-```js
-import { createAgent } from 'metaagent-v5';
+# Web 界面
+node src/server.js
+# 浏览器打开 http://localhost:3000
 
-// 无 API key → 自动降级 mock 模式（CI/离线可用）
-const agent = await createAgent();
-
-// 有 API key → 真模型
-const agent = await createAgent({ apiKey: 'sk-xxx' });
-
-await agent.startSession('demo');
-const r = await agent.sendMessage('帮我设计一个记账智能体');
-console.log(r.content);
-await agent.destroy();
-```
-
-```bash
-# 本地开发（无需 npm install）
-export DEEPSEEK_API_KEY=sk-xxx
-node src-v5.8/index.js "帮我设计一个记账智能体"  # 单轮
-node src-v5.8/index.js                          # 交互模式
-node src-v5.8/demo-fugui-xiaoan.js               # 完整 P0→N15
+# 终端模式
+node src/index.js "帮我设计一个记账智能体"
+node src/index.js   # 交互式
 ```
 
 ## 目录
 
 ```
-├── src-v5.8/        ← 调度器/状态机/适配器/工具注册/宪法加载 (14 JS)
-├── n14-toolchain/   ← 审骨架工具链 (静态检查/行为测试/机制检查)
-├── l3-v5.8/         ← L3 结构化配置 (boundary/states/routeTable 等 9 JSON)
-├── constitutions/   ← 18 份环节宪法 .md
-└── package.json
+MetaAgent/
+├── README.md
+├── FLOW.md                       ← 完整流程表（11 章节）
+├── chat.html                     ← Web 聊天界面
+├── package.json
+│
+├── src/                          ← 状态机引擎（14 JS）
+│   ├── index.js                  入口 + createAgent() 工厂
+│   ├── scheduler.js              主循环（29KB）
+│   ├── state-machine.js          状态定义 + 转移
+│   ├── route-table.js            路由匹配
+│   ├── context-manager.js        宪法注入 + 对话拼接
+│   ├── deepseek-adapter.js       LLM 适配
+│   ├── contract-store.js         21 张表 + 读写（22KB）
+│   ├── outputs-manager.js        产出物管理
+│   ├── telemetry.js              指标统计
+│   ├── tool-registry.js          工具注册
+│   ├── tunables.js               可调参数
+│   ├── l2-l3-validator.js        L2-L3 校验
+│   └── server.js                 Web 服务
+│
+├── constitutions/                ← 20 份环节宪法 .md
+├── l3/                           ← L3 JSON 配置 + schema.sql
+├── tools/                        ← 构建工具
+│   ├── generate-l3.js            N12 自动拆包
+│   ├── n16-package.js            打包交付
+│   └── viz-fsm.js                状态机可视化
+└── tests/                        ← 65+ 单元测试
+```
+
+## 状态机架构
+
+```
+INIT(项目选择) → P0(认知加载) → N1~N15(逐节点设计) → N16(打包交付)
+
+每轮对话：
+M1 元指令 → ANALYZING(意图识别) → IN_SESSION(房间执行) → DET 校验 → 落盘
+
+5 个 M1 口令：元智能体 / 退出 / 取消 / 切断房间 / 房间落地
+```
+
+## 也可 npm 安装
+
+```bash
+npm install metaagent-v5
+import { createAgent } from 'metaagent-v5';
+const agent = await createAgent({ apiKey: 'sk-xxx' });
 ```
 
 ## 要求
 
-Node.js >= 18 | 零依赖即可运行 | 设 `DEEPSEEK_API_KEY` 用真模型，不设自动 mock
+Node.js >= 18 | DeepSeek API Key | 零其他依赖
