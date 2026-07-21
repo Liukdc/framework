@@ -146,6 +146,9 @@ export class Scheduler {
       // (topic_based 无跨任务概念，跳过关键词扫描)
 
       // ═══ Layer 1: ANALYZING - 强制选择+logprobs ═══
+      // 记录 ANALYZING 输入契约
+      this._store._db?.prepare(`INSERT OR REPLACE INTO analyzing_contract_in (id, userId, rawInput, createdAt) VALUES (?, 'default', ?, ?)`).run(`${this._sessionId}_${this._turnIndex}`, userInput.slice(0, 500), new Date().toISOString());
+
       const analyzingResult = await this._analyzeIntent(userInput, trace);
       if (!analyzingResult) {
         this._telemetry.endTrace(trace, 'error');
@@ -153,6 +156,9 @@ export class Scheduler {
       }
 
       const { intent, letter, probability } = analyzingResult;
+
+      // 记录 ANALYZING 输出契约
+      this._store._db?.prepare(`INSERT OR REPLACE INTO analyzing_contract_out (id, userId, choice, logprobs, intent, inputNature, createdAt) VALUES (?, 'default', ?, ?, ?, 'T', ?)`).run(`${this._sessionId}_${this._turnIndex}`, letter, JSON.stringify({ probability }), intent, new Date().toISOString());
       this._telemetry.recordIntent(intent);
       this._telemetry.logEvent(trace, 'analyzing_done', { intent, probability });
 
@@ -176,8 +182,16 @@ export class Scheduler {
       const taskType = this._sm.getTaskType(intent);
       this._sm.transition(STATES.IN_SESSION, intent, taskType);
 
-      await this._store.updateSessionState(this._sessionId, STATES.IN_SESSION, intent);
+      await this._store.updateSessionState(this._sessionId, STATES.IN_SESSION, intent, null, `room_${intent}`);
       this._telemetry.recordTransition('ANALYZING', this._sm.fullState);
+
+      // 更新 roomStateIndex 和房间对话日志
+      this._store.upsertRoomState(`room_${intent}`, intent, intent, this._sm.taskType);
+      this._store.appendRoomLog(
+        `${this._sessionId}_${this._turnIndex}`, 'default', this._projectId || 'default',
+        `room_${intent}`, intent, this._turnIndex,
+        userInput.slice(0, 1000), '', 'analyzed', intent
+      );
 
       // 初始化 topicId（topic_based 意图）——优先从历史恢复，支持跨会话关联
       if (!this._topicId && this._sm.taskType === 'topic_based' && intent !== 'other') {
@@ -245,6 +259,13 @@ export class Scheduler {
       this._turnIndex++;
       await this._store.appendConversation(this._sessionId, this._turnIndex, 'assistant', parsed.content, parsed.turnType);
 
+      // 房间对话日志（roomConversationLog）
+      this._store.appendRoomLog(
+        `${this._sessionId}_${this._turnIndex}_resp`, 'default', this._projectId || 'default',
+        `room_${intent}`, intent, this._turnIndex,
+        '', parsed.content?.slice(0, 2000), parsed.turnType || 'reply', intent
+      );
+
       // ═══ Layer 3: DET 四项校验 ═══
       const detResult = this._detValidate(intent, parsed);
       if (!detResult.valid) {
@@ -260,6 +281,8 @@ export class Scheduler {
           this._sessionId, intent,
           `L2-${intent}-v5.8`, this._outputs.importanceOf(intent), parsed.content
         );
+        // 注册到 outputRegistry
+        this._store._db?.prepare(`INSERT OR REPLACE INTO outputRegistry (outputId, roomId, projectId, roomName, intent, taskType, outputType, outputPath, outputName, outputSummary, createdAt, createdBy) VALUES (?, ?, ?, ?, ?, ?, 'content', '', ?, ?, ?, 'system')`).run(`${intent}_${Date.now()}`, `room_${intent}`, this._projectId || 'default', intent, intent, this._sm.taskType || 'topic_based', `L2-${intent}-v5.8`, parsed.content?.slice(0, 200), new Date().toISOString());
         this._telemetry.inc('criticalOutputsWritten');
       }
 
