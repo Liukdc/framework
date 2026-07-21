@@ -34,8 +34,8 @@ check('N11 importance', sm.getImportance('N11'), 'critical');
 check('P0 importance', sm.getImportance('P0'), 'high');
 check('N4 importance', sm.getImportance('N4'), 'normal');
 
-// intent 数量（18 = P0 + N1~N15 + domain-rule-session + other）
-check('intentList count', sm.intentList.length, 18);
+// intent 数量（19 = INIT + P0 + N1~N15 + N16 + domain-rule-session）
+check('intentList count', sm.intentList.length, 19);
 
 // _matchFrom — 精确匹配
 check('exact: ANALYZING=ANALYZING', sm._matchFrom('ANALYZING', 'ANALYZING'), true);

@@ -1,0 +1,30 @@
+{
+  "_comment": "v5.8 INIT新增初始意图环节（项目选择），P0修复: 16 份宪法独立映射",
+  "constitutionFiles": {
+    "INIT": "INIT_环节宪法_v5.8.md",
+    "P0": "P0_环节宪法_v5.8.md",
+    "N1": "N1_环节宪法_v8.7.md",
+    "N2": "N2_角色一宪法_v3.0.md",
+    "N3": "N3_环节宪法_v1.8.md",
+    "N4": "N4_环节宪法_v1.6.md",
+    "N5": "N5_环节宪法_v2.0.md",
+    "N6": "N6_环节宪法_v1.5.md",
+    "N7": "N7_环节宪法_v2.0.md",
+    "N8": "N8_环节宪法_v2.0.md",
+    "N9": "N9_环节宪法_v2.0.md",
+    "N10": "N10_环节宪法_v1.2.md",
+    "N11": "N11_环节宪法_v1.2.md",
+    "N12": "N12_环节宪法_v1.2.md",
+    "N13": "N13_环节宪法_v1.2.md",
+    "N14": "N14_环节宪法_v1.2.md",
+    "N15": "N15_环节宪法_v1.2.md",
+    "N16": "N16_环节宪法_v1.0.md",
+    "domain-rule-session": "domain-rule-session_环节宪法_v5.8.md"
+  },
+  "_loadPathNote": "整合后宪法文件在项目 constitutions/ 下。l3Path=packages/metaagent/l3-v5.8/",
+  "loadPaths": [
+    "../constitutions"
+  ],
+  "constitutionCount": 19,
+  "n2Role2Constitution": "N2_角色二宪法_v3.6.md"
+}

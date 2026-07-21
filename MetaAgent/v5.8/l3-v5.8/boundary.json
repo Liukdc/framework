@@ -3,6 +3,7 @@
   "alignScenarioFlag": false,
   "slackNodeDeclaration": { "enabled": false },
   "doList": [
+    {"intent":"INIT","taskType":"topic_based","topicEvolutionEnabled":true,"importance":"critical"},
     {"intent":"P0","taskType":"topic_based","topicEvolutionEnabled":true},
     {"intent":"N1","taskType":"topic_based","topicEvolutionEnabled":true},
     {"intent":"N2","taskType":"topic_based","topicEvolutionEnabled":true},
