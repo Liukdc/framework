@@ -13,7 +13,6 @@ const L3 = {
     doList: [
       { intent: 'record', taskType: 'field_based', topicEvolutionEnabled: false },
       { intent: 'query',  taskType: 'topic_based', topicEvolutionEnabled: true },
-      { intent: 'other',  taskType: 'topic_based', topicEvolutionEnabled: true },
     ],
   },
   'states.json': {
@@ -21,7 +20,6 @@ const L3 = {
     inSessionSubtypes: [
       { intent: 'record', taskType: 'field_based', topicEvolutionEnabled: false, importance: 'critical' },
       { intent: 'query',  taskType: 'topic_based', topicEvolutionEnabled: true, importance: 'high' },
-      { intent: 'other',  taskType: 'topic_based', topicEvolutionEnabled: true, importance: 'normal' },
     ],
   },
   'transitions.json': [
@@ -38,7 +36,6 @@ const L3 = {
     routes: [
       { from: 'ANALYZING', contractOutKey: 'intent=record', to: 'IN_SESSION' },
       { from: 'ANALYZING', contractOutKey: 'intent=query', to: 'IN_SESSION' },
-      { from: 'ANALYZING', contractOutKey: 'intent=other', to: 'IN_SESSION' },
       { from: 'IN_SESSION(topic)', contractOutKey: 'turnType=complete', to: 'LISTENING' },
       { from: 'IN_SESSION(field)', contractOutKey: 'turnType=complete', to: 'EXECUTING' },
       { from: 'IN_SESSION', contractOutKey: 'turnType=off-task', to: 'ANALYZING' },
@@ -75,13 +72,13 @@ console.log(`[1] "${r1.intent}" prob=${r1.probability?.toFixed(3)} → ${r1.cont
 const r2 = await agent.sendMessage('这个月花了多少钱');
 console.log(`[2] "${r2.intent}" prob=${r2.probability?.toFixed(3)} → ${r2.content?.slice(0, 80)}`);
 
-// Test 3: "你好" → other
+// Test 3: "你好" → 低置信度路由到 record/query 任一即可
 const r3 = await agent.sendMessage('你好');
 console.log(`[3] "${r3.intent}" prob=${r3.probability?.toFixed(3)} → ${r3.content?.slice(0, 80)}`);
 
 await agent.destroy();
 
-const verdict = r1.intent === 'record' || r1.intent === 'query' || r1.intent === 'other'
+const verdict = r1.intent === 'record' || r1.intent === 'query'
   ? '✅ createAgent 通用——非 MetaAgent 场景正常路由和对话'
   : '⚠️ 路由与预期不符，但 createAgent 加载无报错';
 

@@ -104,8 +104,8 @@ export class Scheduler {
       // logprobs 阈值裁决
       const threshold = getTunable(this._tunables, 'logprobsThreshold');
       if (probability < threshold) {
-        // 低置信度 → intent=other
-        this._sm.transition(STATES.IN_SESSION, 'other', 'topic_based');
+        // 低置信度 → 送回 P0 重新认知
+        this._sm.transition(STATES.IN_SESSION, 'P0', 'topic_based');
       } else {
         // 路由到对应 IN_SESSION
         const taskType = this._sm.getTaskType(intent);
@@ -306,7 +306,7 @@ export class Scheduler {
     const idx = letter.charCodeAt(0) - 65;
     if (idx < 0 || idx >= boundaryRaw.doList.length) {
       // 超出范围 → other
-      return { intent: 'other', letter, probability: 0 };
+      return { intent: 'P0', letter: 'A', probability: 0 };
     }
 
     const intent = boundaryRaw.doList[idx].intent;
