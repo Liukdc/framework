@@ -71,43 +71,30 @@ export class Scheduler {
   /** 项目选择——轻量 ANALYZING，只用模型做这件事 */
   async handleProjectSelect(input) {
     const projects = this._store.listProjects();
-    const list = projects.map((p,i) => `${i+1}. ${p.projectName}`).join('\n');
 
-    const prompt = `你是项目选择器。用户输入："${input}"
-${projects.length > 0 ? `已有项目：\n${list}\n` : ''}任务：判断用户是要「选择已有项目」还是「创建新项目」。
-输出一个字母：
-A = 选择第1个项目
-B = 选择第2个项目
-...以此类推
-最后一个字母 = 创建新项目`;
-
-    try {
-      const totalOptions = projects.length + 1; // include "create new" option
-      const result = await this._adapter.analyze(prompt, totalOptions);
-      const choice = result.letter;
-      const index = choice.charCodeAt(0) - 65;
-
-      if (index >= 0 && index < projects.length) {
-        const p = projects[index];
-        return { phase: 'ready', projectId: p.projectId, projectName: p.projectName, matched: true };
+    // INTENT_INIT: 轻量 ANALYZING
+    const initResult = await this._analyzeInitIntent(input, projects);
+    if (initResult) {
+      if (initResult.phase === 'select') {
+        return { phase: 'ready', projectId: initResult.project.projectId, projectName: initResult.project.projectName };
       }
-      // 创建新项目 → 需要二次确认
+      // create → 二次确认
       const newName = input.replace(/[^a-zA-Z0-9_\u4e00-\u9fff-]/g, '_').slice(0, 30);
       return { phase: 'confirm_create', projectId: newName, projectName: newName, needConfirm: true };
-    } catch {
-      // 模型调用失败 → DET 兜底
-      const t = input.trim();
-      const n = parseInt(t);
-      if (n >= 1 && n <= projects.length) {
-        return { phase: 'ready', projectId: projects[n-1].projectId, projectName: projects[n-1].projectName };
-      }
-      const matched = projects.find(p => p.projectName.includes(t) || p.projectId.includes(t));
-      if (matched) {
-        return { phase: 'ready', projectId: matched.projectId, projectName: matched.projectName };
-      }
-      const newName = t.replace(/[^a-zA-Z0-9_\u4e00-\u9fff-]/g, '_').slice(0, 30);
-      return { phase: 'confirm_create', projectId: newName, projectName: newName, needConfirm: true };
     }
+
+    // 模型调用失败 → DET 兜底
+    const t = input.trim();
+    const n = parseInt(t);
+    if (n >= 1 && n <= projects.length) {
+      return { phase: 'ready', projectId: projects[n-1].projectId, projectName: projects[n-1].projectName };
+    }
+    const matched = projects.find(p => p.projectName.includes(t) || p.projectId.includes(t));
+    if (matched) {
+      return { phase: 'ready', projectId: matched.projectId, projectName: matched.projectName };
+    }
+    const newName = t.replace(/[^a-zA-Z0-9_\u4e00-\u9fff-]/g, '_').slice(0, 30);
+    return { phase: 'confirm_create', projectId: newName, projectName: newName, needConfirm: true };
   }
 
   /** 确认创建新项目 */
@@ -466,6 +453,33 @@ B = 选择第2个项目
   }
 
   // === ANALYZING ===
+
+  /** INTENT_INIT: 初始项目选择意图识别（轻量，不走 logprobs） */
+  async _analyzeInitIntent(userInput, projects) {
+    const list = projects.map((p,i) => {
+      return { letter: String.fromCharCode(65 + i), name: p.projectName };
+    });
+    const createOpt = String.fromCharCode(65 + projects.length);
+
+    const prompt = `你是项目选择器。${projects.length > 0 ? `已有项目：\n${list.map(l => `  ${l.letter}. ${l.name}`).join('\n')}\n` : ''}用户输入："${userInput}"
+任务：判断用户是要选择已有项目还是创建新项目。
+输出一个字母：
+${list.map(l => `${l.letter} = 选择"${l.name}"`).join('\n')}
+${createOpt} = 创建新项目`;
+
+    try {
+      const result = await this._adapter.analyze(prompt, projects.length + 1);
+      const idx = result.letter.charCodeAt(0) - 65;
+      if (idx >= 0 && idx < projects.length) {
+        return { phase: 'select', project: projects[idx] };
+      }
+      return { phase: 'create', projectName: userInput };
+    } catch {
+      return null; // 调用方走 DET 兜底
+    }
+  }
+
+  /** INTENT_ROOM: 环节选择意图识别（强制选择+logprobs） */
   async _analyzeIntent(userInput, trace) {
     const boundaryRaw = JSON.parse(readFileSync(join(this._l3Path, 'boundary.json'), 'utf-8'));
 
