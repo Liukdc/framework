@@ -30,6 +30,9 @@
 
 <!-- @section output-schema -->
 
+【输出格式第一步·强制】
+第一行必须是 {relevance: 0-100}，>=20继续。
+
 ```json
 {
   "turnType": "complete | reply | ask | off-task | giveup",
