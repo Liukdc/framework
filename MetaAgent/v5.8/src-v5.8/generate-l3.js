@@ -43,6 +43,28 @@ async function main() {
 
   await agent.destroy();
 
+  // ═══ 状态机可视化校验 ═══
+  console.log('');
+  const { execSync } = await import('node:child_process');
+  try {
+    const viz = execSync(
+      `C:/Users/qq431/.workbuddy/binaries/node/versions/22.22.2/node.exe "${__dirname || '.'}/viz-fsm.js" --l3 "${join(OUT, 'l3-v5.8')}"`,
+      { encoding: 'utf-8', timeout: 10000 }
+    );
+    // 写出 fsm.md
+    writeFileSync(join(OUT, 'fsm.md'), viz, 'utf-8');
+    console.log('  ✓ fsm.md (状态机流程图)');
+    // 检查完整性
+    if (viz.includes('⚠')) {
+      const warnings = viz.split('\n').filter(l => l.includes('⚠'));
+      for (const w of warnings.slice(0, 5)) console.log(`  ${w.trim()}`);
+    } else {
+      console.log('  ✅ 完整性检查通过');
+    }
+  } catch (err) {
+    console.log(`  ⚠️ 可视化失败: ${err.message?.slice(0, 60)}`);
+  }
+
   // 补全：生成入口 index.js（让产出能独立 node 跑）
   const { writeFileSync } = await import('node:fs');
   writeFileSync(join(OUT, 'index.js'), `// 由 MetaAgent v5.8 生成

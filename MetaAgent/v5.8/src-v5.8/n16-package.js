@@ -174,7 +174,22 @@ const resp = await agent.sendMessage('你的输入');
     console.log('[N16] ⚠️ npm pack 不可用（可能未装 npm），包目录可直接使用或手动 npm publish');
   }
 
-  // ═══ Step 8: 加载验证 ═══
+  // ═══ Step 8: 状态机可视化 + 加载验证 ═══
+  console.log('[N16] 状态机可视化...');
+  try {
+    const { execSync } = await import('node:child_process');
+    const vizScript = join(import.meta.dirname || '.', 'viz-fsm.js');
+    const viz = execSync(
+      `C:/Users/qq431/.workbuddy/binaries/node/versions/22.22.2/node.exe "${vizScript}" --l3 "${l3Dir}"`,
+      { encoding: 'utf-8', timeout: 10000 }
+    );
+    writeFileSync(join(OUT, 'fsm.md'), viz, 'utf-8');
+    const warnings = viz.split('\n').filter(l => l.includes('⚠'));
+    console.log(`[N16] ${warnings.length ? warnings[0].trim() : '✅ 完整性检查通过'}`);
+  } catch (err) {
+    console.log(`[N16] ⚠️ 可视化失败: ${err.message?.slice(0, 60)}`);
+  }
+
   console.log('[N16] 加载验证...');
   try {
     const agent = await createAgent({ l3Path: l3Dir });
