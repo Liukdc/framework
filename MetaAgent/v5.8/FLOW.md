@@ -69,15 +69,13 @@ API端点：
 │   wake/exit/cancel/switch → 匹配到则执行 → 返回
 │
 ├─ Layer 1: ANALYZING
-│   强制选择+logprobs
+│   强制选择+logprobs，带 off-task relay 上下文
 │   ├─ probability ≥ 0.6
 │   │   → 路由到 IN_SESSION 房间 → 加载宪法
 │   │
 │   └─ probability < 0.6
 │       → 查进度 (_getProgress)
-│       → 无进度: "想设计什么样的智能体？"
-│       → 有进度: "已完成 P0→N1，下一步 N2"
-│       → 全完成: "修改某个还是新设计？"
+│       → 建议下一步或直接询问用户
 │
 ├─ Layer 2: IN_SESSION (max 3轮tool)
 │   注入宪法+历史+工具 → 模型调用工具
@@ -88,8 +86,26 @@ API端点：
 │
 ├─ 强制落盘: 模型未调writeOutput → 调度器兜底
 │
+├─ 路由（三种情况）
+│   ├─ turnType=reply/ask → 停留在当前房间
+│   │
+│   ├─ M1 switch("切断房间") → 保存房间状态 → ANALYZING
+│   │
+│   └─ turnType=off-task (模型主动检测偏离)
+│       → 保存 [fromRoom + 判断原因]
+│       → ANALYZING 收到 relay 上下文重新识别
+│       → 识别不了 → 直接问用户当前意图
+│
 └─ 更新session → 返回结果
 ```
+
+## 四、房间管理的三种情况
+
+| 情况 | 触发 | 处理 |
+|------|------|------|
+| 正常交互 | 用户输入在当前房间任务范围内 | 停留在当前 IN_SESSION |
+| 显式切换 | 用户说"切断房间"(M1 switch) | 保存房间状态 → ANALYZING 重选 |
+| off-task 检测 | 模型判定输入不匹配当前任务 | 原房间返回原因 → ANALYZING relay → 重识别 |
 
 ## 四、API 端点
 
