@@ -127,7 +127,68 @@ N16 → node n16-package.js --l3 ./l3-v5.8
 | n16-package | `node n16-package.js --l3 ./l3 --name a --out ./p` | 打包为 npm 可安装包 |
 | generate-l3 | `node generate-l3.js --out ./my-agent` | MetaAgent N12 自动拆包 |
 
-## 七、状态转换简图
+## 七、数据库表 (首次初始化生成)
+
+```sql
+-- 会话状态（断点续接核心）
+CREATE TABLE sessions (
+  session_id      TEXT PRIMARY KEY,
+  state           TEXT NOT NULL DEFAULT 'IDLE',  -- IDLE/LISTENING/ANALYZING/IN_SESSION/...
+  current_intent  TEXT,                           -- P0/N1/N2/...
+  task_type       TEXT,                           -- field_based/topic_based
+  created_at      INTEGER,
+  updated_at      INTEGER,
+  tunable_snapshot TEXT
+);
+
+-- 主题演化（topic_based 专属，记录话题漂移）
+CREATE TABLE topic_evolution (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id  TEXT,
+  topic_id    TEXT NOT NULL,
+  intent      TEXT NOT NULL,
+  change_level TEXT NOT NULL,     -- major/minor/patch/active/abandoned/checkpoint
+  state_snapshot TEXT,
+  created_at  INTEGER
+);
+
+-- 产出物（关键交付物落盘 + 进度追踪）
+CREATE TABLE outputs (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id  TEXT,
+  intent      TEXT NOT NULL,       -- 哪个节点产出的
+  output_name TEXT,                -- L2-P0-v5.8 等
+  importance  TEXT NOT NULL,       -- critical/high/normal
+  content     TEXT,                -- 产出内容
+  written_at  INTEGER
+);
+
+-- 对话日志（可审计的完整对话记录）
+CREATE TABLE conversation_log (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id  TEXT,
+  turn_index  INTEGER,
+  role        TEXT,                -- user/assistant/system
+  content     TEXT,
+  turn_type   TEXT,                -- ask/reply/complete/off-task/...
+  created_at  INTEGER
+);
+
+-- 全文搜索（可选，FTS5 加速对话检索）
+CREATE VIRTUAL TABLE conversation_fts USING fts5(
+  session_id, role, content, tokenize='unicode61'
+);
+```
+
+| 表 | 用途 |
+|----|------|
+| sessions | 断点续接——记住上次在哪个房间 |
+| outputs | 进度追踪——哪些节点完成了 |
+| topic_evolution | 话题漂移记录 |
+| conversation_log | 完整对话审计 |
+| conversation_fts | 对话全文搜索（可选） |
+
+## 八、状态转换简图
 
 ```
 IDLE → LISTENING → ANALYZING
