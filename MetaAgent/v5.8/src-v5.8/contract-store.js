@@ -188,6 +188,11 @@ export class ContractStore {
     return this._db.prepare(`SELECT * FROM sessions WHERE session_id=?`).get(sessionId);
   }
 
+  /** 获取最近一次非 IDLE 的会话（用于断点续接） */
+  getLastActiveSession() {
+    return this._db.prepare(`SELECT * FROM sessions WHERE state != 'IDLE' AND state != 'CLOSING' ORDER BY updated_at DESC LIMIT 1`).get() || null;
+  }
+
   // === Topic Evolution ===
 
   appendTopicEvent(sessionId, topicId, intent, changeLevel, stateSnapshot = null) {

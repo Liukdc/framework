@@ -53,6 +53,19 @@ export class Scheduler {
       console.warn('[scheduler] L2-L3 校验不通过:', results.filter(r => !r.pass).map(r => r.check));
     }
 
+    // 检查是否有历史会话——断点续接
+    const lastSession = this._store.getLastActiveSession();
+    if (lastSession) {
+      const lastIntent = lastSession.current_intent || 'P0';
+      const lastState = lastSession.state || 'ANALYZING';
+      await this._store.createSession(sessionId, { ...this._tunables, resumedFrom: lastSession.session_id });
+      this._sm.transition(STATES.ANALYZING);
+      this._sm._intent = lastIntent;
+      this._sm._taskType = lastSession.task_type || 'topic_based';
+      console.log(`[scheduler] 续接会话 ${lastSession.session_id} → ${lastIntent}`);
+      return { state: STATES.ANALYZING, message: `续接上次设计 (${lastIntent})。输入你的想法，或说"重新开始"回到 P0。` };
+    }
+
     await this._store.createSession(sessionId, { ...this._tunables });
     this._sm.transition(STATES.IDLE);
     this._telemetry.inc('totalSessions');
