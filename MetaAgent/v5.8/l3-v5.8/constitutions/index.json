@@ -1,6 +1,7 @@
 {
-  "_comment": "v5.8 P0修复: 16 份宪法独立映射，消除合并加载违反环节隔离的问题",
+  "_comment": "v5.8 INIT新增初始意图环节（项目选择），P0修复: 16 份宪法独立映射",
   "constitutionFiles": {
+    "INIT": "INIT_环节宪法_v5.8.md",
     "P0": "P0_环节宪法_v5.8.md",
     "N1": "N1_环节宪法_v8.7.md",
     "N2": "N2_角色一宪法_v3.0.md",
@@ -24,6 +25,6 @@
   "loadPaths": [
     "../constitutions"
   ],
-  "constitutionCount": 18,
+  "constitutionCount": 19,
   "n2Role2Constitution": "N2_角色二宪法_v3.6.md"
 }
