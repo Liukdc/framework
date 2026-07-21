@@ -80,7 +80,7 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // POST /select-project — 处理项目选择
+  // POST /select-project — DET 项目选择
   if (req.method === 'POST' && url.pathname === '/select-project') {
     let body = '';
     req.on('data', c => body += c);
@@ -89,19 +89,14 @@ const server = createServer(async (req, res) => {
         const { input } = JSON.parse(body);
         if (!agent) { res.writeHead(400); res.end(JSON.stringify({error:'请先调用 /start'})); return; }
         const result = await agent.selectProject(input);
-        if (result.phase === 'project_create') {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ phase: 'project_create', message: result.message }));
-          return;
-        }
-        // 项目已选定 → 完成初始化
-        await agent.finishInit(result.projectId);
+        // finishInit 完成会话初始化
+        await agent.finishInit(result.projectId || result.projectName);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           phase: 'ready',
           projectId: result.projectId,
           projectName: result.projectName,
-          message: `元智能体已就绪。说出你的智能体设计想法，我们从 P0 开始。`
+          message: '元智能体已就绪。说出你的智能体设计想法，我们从 P0 开始。'
         }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });

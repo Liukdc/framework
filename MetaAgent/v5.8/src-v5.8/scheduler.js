@@ -47,61 +47,46 @@ export class Scheduler {
     this._sessionId = sessionId;
     this._turnIndex = 0;
 
-    // 项目选择阶段（在任何房间进入前）
+    // DET 项目选择——不走 LLM
     const projects = this._store.listProjects();
     if (projects.length === 0) {
       this._sm.transition(STATES.IDLE);
       return {
-        state: STATES.IDLE,
         phase: 'project_create',
-        message: '欢迎！这是你第一次使用 MetaAgent。请给你的项目起个名字（例如"记账助手"）：',
+        message: '欢迎！请给你的项目起个名字（例如"记账助手"）：',
         projects: []
       };
     }
-    // 有历史项目 → 让用户选择新建或续接
+    // 有项目→直接列出，用户选一个
     this._sm.transition(STATES.IDLE);
     const lastProj = this._store.getLastProject();
-    const list = projects.map(p => `${p.projectName}${p.projectId === lastProj ? ' (上次)' : ''}`).join('、');
     return {
-      state: STATES.IDLE,
-      phase: 'project_select',
-      message: `欢迎回来！你有 ${projects.length} 个项目：${list}。输入项目名回到已有项目，或说"新建"开一个。`,
-      projects: projects.map(p => ({ id: p.projectId, name: p.projectName }))
+      phase: 'project_list',
+      message: `已有项目：\n${projects.map((p,i) => `  ${i+1}. ${p.projectName}${p.projectId === lastProj ? ' ←上次' : ''}`).join('\n')}\n\n输入编号或项目名选择：`,
+      projects: projects.map((p,i) => ({ id: p.projectId, name: p.projectName, index: i+1 })),
     };
   }
 
-  /** 处理项目选择输入（新建/续接） */
+  /** DET 处理项目选择 */
   async handleProjectSelect(input) {
     const projects = this._store.listProjects();
+    const t = input.trim();
 
-    if (input === '新建' || input === 'new') {
-      return { phase: 'project_create', message: '请输入新项目名称：' };
+    // 数字 → 按序号匹配
+    const n = parseInt(t);
+    if (n >= 1 && n <= projects.length) {
+      const p = projects[n-1];
+      return { phase: 'ready', projectId: p.projectId, projectName: p.projectName };
     }
 
-    // 尝试匹配已有项目
-    const matched = projects.find(p =>
-      p.projectName === input || p.projectId === input
-    );
+    // 名称匹配
+    const matched = projects.find(p => p.projectName === t || p.projectId === t);
     if (matched) {
-      this._projectId = matched.projectId;
-      this._store.setLastProject(this._projectId);
-      // 项目选好 → 进入真正的 init
-      const { allPass, results } = await quickValidate(this._l3Path);
-      if (!allPass) {
-        console.warn('[scheduler] L2-L3 校验不通过:', results.filter(r => !r.pass).map(r => r.check));
-      }
-      return { phase: 'project_ready', projectId: matched.projectId, projectName: matched.projectName };
+      return { phase: 'ready', projectId: matched.projectId, projectName: matched.projectName };
     }
 
-    // 当成新项目名
-    this._projectId = input.replace(/[^a-zA-Z0-9_\u4e00-\u9fff-]/g, '_');
-    this._store.createProject(this._projectId, input);
-    this._store.setLastProject(this._projectId);
-    const { allPass, results } = await quickValidate(this._l3Path);
-    if (!allPass) {
-      console.warn('[scheduler] L2-L3 校验不通过:', results.filter(r => !r.pass).map(r => r.check));
-    }
-    return { phase: 'project_created', projectId: this._projectId, projectName: input };
+    // 没匹配 → 当成新项目名
+    return { phase: 'ready', projectId: t.replace(/[^a-zA-Z0-9_\u4e00-\u9fff-]/g, '_'), projectName: t, isNew: true };
   }
 
   /** 项目选定后，完成会话初始化 */

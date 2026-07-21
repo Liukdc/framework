@@ -68,12 +68,10 @@ async function startAgent() {
   addMsg('a', '', d.message);
   document.getElementById('st').textContent = '项目选择';
 
-  if (d.phase === 'ready') {
-    // 已就绪（无历史项目或自动恢复）
-    document.getElementById('st').textContent = '就绪';
-  } else if (d.phase === 'project_select' || d.phase === 'project_create') {
-    // 等待项目选择
-    window._projectMode = d.phase;
+  if (d.projects && d.projects.length > 0) {
+    window._projectMode = true;
+  } else {
+    window._projectMode = true; // 无项目也走项目选择（创建新项目）
   }
 }
 
@@ -90,19 +88,15 @@ window.S = async () => {
   document.getElementById('empty')?.remove();
   addMsg('u','',t);
 
-  // 项目选择阶段
+  // 项目选择阶段：输入 → /select-project → 完成
   if (window._projectMode) {
     document.getElementById('st').textContent='处理中...';
     try {
       const r = await fetch('/select-project', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({input:t})});
       const d = await r.json();
-      if (d.phase === 'ready') {
-        window._projectMode = null;
-        addMsg('a','',d.message);
-        document.getElementById('st').textContent = '就绪';
-      } else {
-        addMsg('a','',d.message);
-      }
+      window._projectMode = null;
+      addMsg('a','',d.message);
+      document.getElementById('st').textContent = '就绪';
     } catch(e) { addMsg('a','','连接失败'); }
     btn.disabled=false; el.focus(); return;
   }
