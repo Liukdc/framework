@@ -29,6 +29,7 @@ export class ContractStore {
     }
 
     this._createTables();
+    this._verifyAllTables();
     return this;
   }
 
@@ -349,6 +350,35 @@ export class ContractStore {
         userMessage, modelOutput, content='conversationArchive', content_rowid='archiveId'
       );
     `);
+  }
+
+  /** 验证全部 21 张表是否存在 */
+  _verifyAllTables() {
+    const required = [
+      'analyzing_contract_in', 'analyzing_contract_out',
+      'sessions',
+      'topicEvolution', 'topicEvolutionEvent', 'topicEvolutionArchive',
+      'domainRules', 'ruleCandidates', 'ruleMiningQueue',
+      'sessionCheckpoints',
+      'roomConversationLog', 'conversationArchive',
+      'roomStateIndex',
+      'outputRegistry', 'outputs',
+      'projectRegistry', 'userLastProject',
+      'conversation_log',
+    ];
+    const missing = [];
+    for (const table of required) {
+      try {
+        this._db.prepare(`SELECT 1 FROM ${table} LIMIT 1`).get();
+      } catch {
+        missing.push(table);
+      }
+    }
+    if (missing.length > 0) {
+      console.error(`[contractStore] ❌ 缺少 ${missing.length} 张表: ${missing.join(', ')}`);
+    } else {
+      console.log(`[contractStore] ✅ ${required.length} 张表全部就绪`);
+    }
   }
 
   // === Session ===
