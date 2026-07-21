@@ -8,7 +8,7 @@ const L3 = join(__dirname, 'l3-v5.8');
 
 console.log('═══ 富贵小安 SDK 化验证 ═══\n');
 
-const agent = await createAgent({ l3Path: L3 });
+const agent = await createAgent({ l3Path: L3, mock: true });
 await agent.startSession('fuxiao-test');
 
 // Test 1: 记账

@@ -219,11 +219,22 @@ class MockAdapter {
  */
 export async function createAgent(options = {}) {
   const hasApiKey = options.apiKey || process.env.DEEPSEEK_API_KEY;
+  const mockMode = options.mock || process.env.METAAGENT_MOCK === 'true';
+
+  // 无 API key 且未显式开启 mock → 直接报错
+  if (!hasApiKey && !mockMode) {
+    console.error('[MetaAgent] 未检测到 DEEPSEEK_API_KEY 环境变量。');
+    console.error('  请通过以下方式之一设置:');
+    console.error('  1. export DEEPSEEK_API_KEY=sk-xxx');
+    console.error('  2. createAgent({ apiKey: "sk-xxx" })');
+    console.error('  3. METAAGENT_MOCK=true 使用 mock 模式（仅供测试）');
+    process.exit(1);
+  }
+
   const agent = new MetaAgent(options);
-  // 无 API key → 注入 mock adapter 后初始化，避免 scheduler 持旧引用
   if (!hasApiKey) {
     agent._adapter = new MockAdapter();
-    console.warn('[createAgent] 无 API Key，降级为 mock 模式');
+    console.warn('[createAgent] Mock 模式（仅供测试，对话为占位回复）');
   }
   await agent.init();
   return agent;
@@ -243,9 +254,9 @@ async function cli() {
   await interactiveMode();
 }
 
-/** 单轮对话（复用 createAgent 的 mock 降级逻辑） */
+/** 单轮对话 */
 async function singleTurn(input) {
-  const agent = await createAgent();  // 自动检测 API key，无则降级 mock
+  const agent = await createAgent();
   console.log('[MetaAgent v5.8 CLI]');
 
   const initResp = await agent.startSession('cli-session');

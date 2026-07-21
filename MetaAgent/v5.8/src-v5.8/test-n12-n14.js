@@ -15,7 +15,7 @@ const STEPS = [
 ];
 
 async function main() {
-  const meta = await createAgent();
+  const meta = await createAgent({ mock: true });
   const sessionId = `n12-n14-${Date.now()}`;
   const initResp = await meta.startSession(sessionId);
 

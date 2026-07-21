@@ -42,7 +42,7 @@ const STEPS = [
 ];
 
 async function main() {
-  const meta = await createAgent();
+  const meta = await createAgent({ mock: true });
 
   const initResp = await meta.startSession(`fugui-xiaoan-${Date.now()}`);
   console.log('════════════════════════════════════');
