@@ -56,7 +56,7 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // POST /start — 初始化 agent
+  // POST /start — 初始化 agent + 项目选择
   if (req.method === 'POST' && url.pathname === '/start') {
     try {
       if (!apiKey) {
@@ -65,13 +65,49 @@ const server = createServer(async (req, res) => {
         return;
       }
       if (!agent) agent = await createAgent({ apiKey });
-      await agent.startSession('web');
+      const initResp = await agent.startSession('web');
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ sessionId: 'web', message: '元智能体已就绪。说出你的智能体设计想法。' }));
+      res.end(JSON.stringify({
+        phase: initResp.phase || 'ready',
+        message: initResp.message,
+        projects: initResp.projects || [],
+        projectName: initResp.projectName || null,
+      }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     }
+    return;
+  }
+
+  // POST /select-project — 处理项目选择
+  if (req.method === 'POST' && url.pathname === '/select-project') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const { input } = JSON.parse(body);
+        if (!agent) { res.writeHead(400); res.end(JSON.stringify({error:'请先调用 /start'})); return; }
+        const result = await agent.selectProject(input);
+        if (result.phase === 'project_create') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ phase: 'project_create', message: result.message }));
+          return;
+        }
+        // 项目已选定 → 完成初始化
+        await agent.finishInit(result.projectId);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          phase: 'ready',
+          projectId: result.projectId,
+          projectName: result.projectName,
+          message: `元智能体已就绪。说出你的智能体设计想法，我们从 P0 开始。`
+        }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
     return;
   }
 

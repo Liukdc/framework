@@ -109,11 +109,23 @@ export class MetaAgent {
     if (!this._initialized) throw new Error('MetaAgent 尚未初始化，请先调用 init()');
   }
 
-  /** 启动新会话 */
+  /** 启动新会话——先选项目，再初始化 */
   async startSession(sessionId) {
     this._ensureInit();
     this._sessionId = sessionId || `session-${Date.now()}`;
     return this._scheduler.initSession(this._sessionId);
+  }
+
+  /** 处理项目选择（新建/续接） */
+  async selectProject(input) {
+    this._ensureInit();
+    return this._scheduler.handleProjectSelect(input);
+  }
+
+  /** 项目选定后完成初始化 */
+  async finishInit(projectId) {
+    this._ensureInit();
+    return this._scheduler.finishInitSession(projectId);
   }
 
   /** 发送用户消息 */

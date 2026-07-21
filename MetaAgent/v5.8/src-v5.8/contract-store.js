@@ -429,6 +429,27 @@ export class ContractStore {
     return this._db.prepare(`SELECT * FROM sessions WHERE state != 'IDLE' AND state != 'CLOSING' ORDER BY updated_at DESC LIMIT 1`).get() || null;
   }
 
+  // === Project Management ===
+
+  listProjects(userId = 'default') {
+    return this._db.prepare(`SELECT * FROM projectRegistry WHERE userId=? ORDER BY updatedAt DESC`).all(userId);
+  }
+
+  createProject(projectId, projectName, userId = 'default') {
+    const now = new Date().toISOString();
+    this._db.prepare(`INSERT OR IGNORE INTO projectRegistry (projectId, projectName, userId, description, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)`).run(projectId, projectName, userId, '', now, now);
+    return { projectId, projectName };
+  }
+
+  getLastProject(userId = 'default') {
+    const row = this._db.prepare(`SELECT projectId FROM userLastProject WHERE userId=?`).get(userId);
+    return row ? row.projectId : null;
+  }
+
+  setLastProject(projectId, userId = 'default') {
+    this._db.prepare(`INSERT OR REPLACE INTO userLastProject (userId, projectId) VALUES (?, ?)`).run(userId, projectId);
+  }
+
   // === Room State Index（全窗口房间状态） ===
 
   upsertRoomState(roomId, roomName, intent, taskType, userId = 'default') {
