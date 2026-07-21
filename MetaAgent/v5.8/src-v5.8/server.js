@@ -16,6 +16,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'applica
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
+  console.log(`[${req.method}] ${url.pathname}`);
 
   // 静态文件: / → chat.html
   if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/chat.html')) {
