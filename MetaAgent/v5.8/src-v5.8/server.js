@@ -76,5 +76,3 @@ server.listen(PORT, () => {
   console.log(`\n  MetaAgent v5.8 Web 界面`);
   console.log(`  浏览器打开: http://localhost:${PORT}\n`);
 });
-  console.log(`  http://localhost:${PORT}\n`);
-});
