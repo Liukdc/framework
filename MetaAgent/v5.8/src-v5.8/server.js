@@ -6,7 +6,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createAgent } from './index.js';
 
-const PORT = process.env.PORT || 3000;
+let PORT = process.env.PORT || 3000;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // 全局 agent 实例（单例）
@@ -64,12 +64,14 @@ const server = createServer(async (req, res) => {
 });
 
 server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`\n❌ 端口 ${PORT} 被占用。换端口启动: PORT=3001 node src-v5.8/server.js`);
-    console.error(`   或者先杀掉占用进程: cmd /c "for /f "tokens=5" %a in ('netstat -ano ^| findstr :${PORT}') do taskkill /F /PID %a"`);
+  if (err.code === 'EADDRINUSE' && PORT < 3020) {
+    console.log(`端口 ${PORT} 被占用，尝试 ${PORT + 1}...`);
+    PORT++;
+    server.listen(PORT);
+  } else {
+    console.error('服务错误:', err);
     process.exit(1);
   }
-  console.error('服务错误:', err);
 });
 
 server.listen(PORT, () => {
