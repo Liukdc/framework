@@ -1,7 +1,7 @@
 // @MetaAgent v5.8 — scheduler.js
 // 五层过滤调度器：M1口令→ANALYZING→IN_SESSION→DET→路由
 
-import { readFileSync } from 'node:fs';
+import { DETValidator } from './det-validator.js';
 import { join } from 'node:path';
 import { STATES } from './state-machine.js';
 import { getTunable } from './tunables.js';
@@ -29,6 +29,7 @@ export class Scheduler {
     this._tunables = tunables;
     this._l3Path = l3Path;
     this._outputDir = outputDir || null;
+    this._detValidator = new DETValidator(join(l3Path, '..', 'constitutions'));
 
     // 运行时上下文
     /** @type {string|null} 当前会话ID */
@@ -618,32 +619,8 @@ ${role1Parsed.content.slice(0, getTunable(this._tunables, 'maxContextTokens') / 
 
   // === DET 校验 ===
   _detValidate(intent, parsed) {
-    const taskType = this._sm.getTaskType(intent);
-
-    if (taskType === 'field_based') {
-      // Layer 3-A: value_domain 校验（从 L3 dataProtocol 读取，避免硬编码 N11/N12）
-      let rules = null;
-      try {
-        const dp = JSON.parse(readFileSync(join(this._l3Path, 'dataProtocol.json'), 'utf-8'));
-        rules = dp?.fieldValidation?.[intent];
-      } catch { /* dataProtocol 缺失时跳过 */ }
-
-      if (rules) {
-        // 通用 field_based 校验：validateField 工具的逻辑移入
-        const matched = rules.validValues?.some(v => parsed.content.includes(v))
-                    || (rules.pattern && new RegExp(rules.pattern).test(parsed.content));
-        if (!matched && parsed.turnType === 'complete') {
-          return { valid: false, message: rules.failMessage || `${intent} 输出不符合校验规则` };
-        }
-      }
-    } else if (taskType === 'topic_based') {
-      // Layer 3-B: output_format 校验
-      if (!parsed.content || parsed.content.trim().length === 0) {
-        return { valid: false, message: '输出为空，请重新生成。' };
-      }
-    }
-
-    return { valid: true };
+    // v5.8: DET 确定性校验——不依赖模型自觉，代码硬检查
+    return this._detValidator.validate(intent, parsed, this._sm.getTaskType(intent));
   }
 
   // === 关键产出物写盘 ===
