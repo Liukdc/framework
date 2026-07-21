@@ -319,7 +319,8 @@ async function interactiveMode() {
       console.log(`\n━━━ [${resp.state}] intent=${resp.intent} prob=${resp.probability?.toFixed(3)} turnType=${resp.turnType} ━━━`);
       console.log(resp.content);
     } catch (err) {
-      console.error(`\n❌ 错误: ${err.message}`);
+      console.error(`\n❌ 错误: ${err?.message || err}`);
+      console.error(err?.stack?.slice(0, 300));
     }
     rl.prompt();
   });
