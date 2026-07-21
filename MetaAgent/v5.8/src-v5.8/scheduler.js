@@ -104,13 +104,13 @@ export class Scheduler {
       // logprobs 阈值裁决
       const threshold = getTunable(this._tunables, 'logprobsThreshold');
       if (probability < threshold) {
-        // 低置信度 → 送回 P0 重新认知
-        this._sm.transition(STATES.IN_SESSION, 'P0', 'topic_based');
-      } else {
-        // 路由到对应 IN_SESSION
-        const taskType = this._sm.getTaskType(intent);
-        this._sm.transition(STATES.IN_SESSION, intent, taskType);
+        // 低置信度 → 不猜，直接问用户
+        this._telemetry.endTrace(trace, 'low_confidence');
+        return { state: this._sm.fullState, turnType: 'ask', content: '我不太确定你的意思。你是想设计一个智能体，还是其他事情？' };
       }
+      // 正常路由到对应 IN_SESSION
+      const taskType = this._sm.getTaskType(intent);
+      this._sm.transition(STATES.IN_SESSION, intent, taskType);
 
       await this._store.updateSessionState(this._sessionId, STATES.IN_SESSION, intent);
       this._telemetry.recordTransition('ANALYZING', this._sm.fullState);
