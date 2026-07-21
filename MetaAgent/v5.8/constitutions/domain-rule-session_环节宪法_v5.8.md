@@ -1,9 +1,6 @@
 # domain-rule-session 环节宪法（v5.8）
 
 <!-- @constitution domain-rule-session -->
-<!-- @section taskType -->
-topic_based
-
 **判定理由**：领域规则讨论是开放式对话——用户可能想要确认候选规则、修改已有规则、仲裁冲突、主动声明新规则。没有唯一正确输出，语义讨论空间大，归为 topic_based。
 
 <!-- @section role -->

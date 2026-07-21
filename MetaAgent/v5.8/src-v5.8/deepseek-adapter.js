@@ -124,20 +124,47 @@ export class DeepSeekAdapter {
     return this._call(params);
   }
 
-  /** 解析 IN_SESSION 结果 */
+  /** 解析 IN_SESSION 结果 + isOnTask 前置拦截 */
   parseInSessionResult(result) {
     const choice = result.choices?.[0];
-    if (!choice) return { content: '', turnType: null, toolCalls: [] };
+    if (!choice) return { content: '', turnType: null, toolCalls: [], isOnTask: null };
 
-    const content = choice.message?.content || '';
+    const raw = choice.message?.content || '';
     const toolCalls = choice.message?.tool_calls || [];
 
-    // 从 content 中提取 turnType（模型在宪法约束下返回）
+    // ═══ isOnTask 前置拦截 ═══
+    const onTaskResult = this._extractIsOnTask(raw);
+    // 情况1: 开头不是 {isOnTask: ...} → 需要模型重新生成
+    if (onTaskResult.status === 'missing') {
+      return { content: '', turnType: null, toolCalls: [], isOnTask: null, retry: true };
+    }
+    // 情况2+3: isOnTask:false → 路由 ANALYZING
+    if (onTaskResult.status === 'false') {
+      return { content: '', turnType: 'off-task', toolCalls: [], isOnTask: false };
+    }
+    // 情况4: isOnTask:true → 截断前缀，返回剩余内容
+    const content = onTaskResult.rest || raw;
+
+    // 从 content 中提取 turnType
     let turnType = null;
     const match = content.match(/turnType\s*[=:]\s*['"]?(\w+(?:-\w+)?)['"]?/i);
     if (match) turnType = match[1];
 
-    return { content, turnType, toolCalls };
+    return { content, turnType, toolCalls, isOnTask: true };
+  }
+
+  /** 从模型输出开头提取 {isOnTask: true/false} */
+  _extractIsOnTask(raw) {
+    if (!raw) return { status: 'missing' };
+    // 跳过可能的空白和 markdown 代码块标记
+    const trimmed = raw.replace(/^```json?\s*\n?/, '').trim();
+    // 匹配 {isOnTask: true/false}
+    const match = trimmed.match(/^{\s*['"]?isOnTask['"]?\s*:\s*(true|false)\s*,?\s*\}?/i);
+    if (!match) return { status: 'missing' };
+    if (match[1].toLowerCase() === 'false') return { status: 'false' };
+    // 截断 isOnTask 前缀（包括可能的逗号和后面的换行）
+    const rest = trimmed.replace(/^{\s*['"]?isOnTask['"]?\s*:\s*true\s*,?\s*\}?\s*\n?/, '').trim();
+    return { status: 'true', rest };
   }
 
   // === N13: 代码专项模型 ===

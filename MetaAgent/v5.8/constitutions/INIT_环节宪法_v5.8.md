@@ -1,9 +1,6 @@
 # INIT 初始意图环节宪法（元智能体 v5.8）
 
 <!-- @constitution init-project-select -->
-<!-- @section taskType -->
-topic_based
-
 判定理由：项目选择有讨论空间——用户可能说"接着做上次那个"、"开个新的"、"记账助手"、或者聊半天才说清楚要什么。不是填表。
 
 <!-- @section role -->

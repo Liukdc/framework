@@ -104,11 +104,11 @@ export class ContextManager {
   // === ANALYZING system prompt ===
   // === 根宪法第1条：角色匹配先行（isOnTask 强制前置） ===
   _buildRootHeader() {
-    return `【根宪法第1条·角色匹配先行】
-你的所有回复必须以结构化 JSON 开头。第一个字段必须是 isOnTask：
-- 如果当前输入与你收到的角色任务有关 → {"isOnTask": true, ...继续...}
-- 如果当前输入与角色任务无关 → {"isOnTask": false}
-输出 isOnTask=false 后立即停止生成。DET 将截断并转入意图识别重新路由。`;
+    return `【根宪法第1条·角色匹配先行·必须输出】
+你的回复必须以 {isOnTask: true} 或 {isOnTask: false} 开头。
+- 若当前输入与你的角色任务有关 → 先输出 {isOnTask: true}，然后继续生成回答内容
+- 若当前输入与你的角色任务无关 → 只输出 {isOnTask: false}，不会向用户展示
+⚠️ 如果第一个字符不是 { ，系统将强制重新生成。`;
   }
 
   _buildAnalyzingSystem() {

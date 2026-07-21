@@ -229,6 +229,32 @@ export class Scheduler {
         }
         parsed = this._adapter.parseInSessionResult(rawResult);
 
+        // ═══ 情况1: isOnTask 缺失 → 重试一次 ═══
+        if (parsed.retry) {
+          console.warn('[scheduler] isOnTask 缺失，重试一次...');
+          const retrySystem = systemPrompt + '\n\n⚠️ 你的回复必须以 {isOnTask: true/false} 开头。';
+          const retryResult = intent === 'N13'
+            ? await this._adapter.callCodeModel(retrySystem, conversationMessages, tools)
+            : await this._adapter.callInSession(retrySystem, conversationMessages, tools, modelOverride || undefined);
+          parsed = this._adapter.parseInSessionResult(retryResult);
+          if (parsed.retry) {
+            this._telemetry.logEvent(trace, 'isOnTask_missing_twice');
+            return { state: this._sm.fullState, turnType: 'validation_failed', content: '模型连续两次未遵循 isOnTask 格式要求。请刷新或重新输入。' };
+          }
+        }
+
+        // ═══ 情况2+3: isOnTask:false → 立即路由 ANALYZING ═══
+        if (parsed.isOnTask === false) {
+          this._offTaskContext = { fromRoom: intent, reason: '模型判定 isOnTask=false', input: userInput };
+          this._sm.transition(STATES.ANALYZING);
+          await this._store.updateSessionState(this._sessionId, STATES.ANALYZING);
+          this._telemetry.logEvent(trace, 'isOnTask_false_routed');
+          this._telemetry.endTrace(trace, 'offtask_routed');
+          return { state: STATES.ANALYZING, turnType: 'off-task', content: '检测到意图切换，正在重新识别...' };
+        }
+
+        // ═══ 情况4: isOnTask:true → 截断前缀，正常处理 ═══
+
         // 无工具调用 → 模型已完成回答
         if (parsed.toolCalls.length === 0) break;
 
