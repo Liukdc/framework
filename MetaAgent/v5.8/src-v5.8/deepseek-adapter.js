@@ -134,15 +134,12 @@ export class DeepSeekAdapter {
 
     // ═══ isOnTask 前置拦截 ═══
     const onTaskResult = this._extractIsOnTask(raw);
-    // 情况1: 开头不是 {isOnTask: ...} → 需要模型重新生成
-    if (onTaskResult.status === 'missing') {
-      return { content: '', turnType: null, toolCalls: [], isOnTask: null, retry: true };
-    }
-    // 情况2+3: isOnTask:false → 路由 ANALYZING
+    // isOnTask:false → 截断，路由 ANALYZING
     if (onTaskResult.status === 'false') {
       return { content: '', turnType: 'off-task', toolCalls: [], isOnTask: false };
     }
-    // 情况4: isOnTask:true → 截断前缀，返回剩余内容
+    // isOnTask:true → 截断前缀，返回剩余内容
+    // isOnTask 缺失 → 原样通过（不重试，靠 recency bias 保证模型遵守）
     const content = onTaskResult.rest || raw;
 
     // 从 content 中提取 turnType

@@ -38,13 +38,11 @@ export class ContextManager {
 
     switch (strategy) {
       case 'analyzing': {
-        parts.push(this._buildRootHeader());
         parts.push(this._buildAnalyzingSystem());
+        parts.push(this._buildRootHeader()); // recency bias: 最后一行最关键
         break;
       }
       case 'topic_three_layer': {
-        // 根宪法第1条：isOnTask 强制前置
-        parts.push(this._buildRootHeader());
         const depth = getTunable(this._tunables, 'threeLayerInjectionDepth');
         parts.push(this._loadConstitution(intent));
 
@@ -77,6 +75,9 @@ export class ContextManager {
         break;
     }
 
+    // isOnTask 必须是最后一条——recency bias 确保模型最优先执行
+    parts.push(this._buildRootHeader());
+
     // v5.8: 所有 IN_SESSION 环节完成时强制写盘
     if (strategy !== 'analyzing' && strategy !== 'minimal') {
       parts.push(`[强制规则] 本环节产出完成后，必须通过 function calling 调用 writeOutput 工具落盘。
@@ -104,11 +105,8 @@ export class ContextManager {
   // === ANALYZING system prompt ===
   // === 根宪法第1条：角色匹配先行（isOnTask 强制前置） ===
   _buildRootHeader() {
-    return `【根宪法第1条·角色匹配先行·必须输出】
-你的回复必须以 {isOnTask: true} 或 {isOnTask: false} 开头。
-- 若当前输入与你的角色任务有关 → 先输出 {isOnTask: true}，然后继续生成回答内容
-- 若当前输入与你的角色任务无关 → 只输出 {isOnTask: false}，不会向用户展示
-⚠️ 如果第一个字符不是 { ，系统将强制重新生成。`;
+    return `⚠️ 不可跳过：你的回复第一个字符必须是 {，后面是 "isOnTask":true 或 "isOnTask":false。
+与任务有关 → {"isOnTask":true} 然后继续。无关 → {"isOnTask":false}。`;
   }
 
   _buildAnalyzingSystem() {
