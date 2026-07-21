@@ -51,12 +51,6 @@ topic_based
 }
 ```
 
-<!-- @section validation -->
-
-- rules 为空数组：领域规则讨论无硬格式约束
-- `needSemanticExtensionCheck`: true
-- DET 不校验 ruleChanges 字段内容（语义判断由人确认）
-
 <!-- @section completion -->
 
 所有待确认规则已处理 OR 用户明确说"没有了"/"确认完毕" → `turnType: complete`
