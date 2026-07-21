@@ -127,66 +127,48 @@ N16 → node n16-package.js --l3 ./l3-v5.8
 | n16-package | `node n16-package.js --l3 ./l3 --name a --out ./p` | 打包为 npm 可安装包 |
 | generate-l3 | `node generate-l3.js --out ./my-agent` | MetaAgent N12 自动拆包 |
 
-## 七、数据库表 (首次初始化生成)
+## 七、数据库表 (首次初始化生成全部 10 张表)
+
+| 表 | 作用 |
+|----|------|
+| `sessions` | 会话——断点续接，记住用户在哪个房间 |
+| `room_state_index` | 全窗口房间状态——物化视图，跨房间意图识别 |
+| `room_conversation_log` | 房间对话——每房间独立，物理隔离 |
+| `session_checkpoint` | 检查点——每房快照，支持断点续接 |
+| `contract_evolution` | 契约演化——field_based 字段级变更记录 |
+| `output_registry` | 产出注册——每房间产出物索引 |
+| `outputs` | 产出物——进度追踪，关键交付物落盘 |
+| `topic_evolution` | 主题演化——topic_based 话题漂移 |
+| `conversation_log` | 全局对话——完整审计日志 |
+| `conversation_fts` | 全文搜索（可选） |
 
 ```sql
--- 会话状态（断点续接核心）
-CREATE TABLE sessions (
-  session_id      TEXT PRIMARY KEY,
-  state           TEXT NOT NULL DEFAULT 'IDLE',  -- IDLE/LISTENING/ANALYZING/IN_SESSION/...
-  current_intent  TEXT,                           -- P0/N1/N2/...
-  task_type       TEXT,                           -- field_based/topic_based
-  created_at      INTEGER,
-  updated_at      INTEGER,
-  tunable_snapshot TEXT
+CREATE TABLE room_state_index (
+  room_id, room_name, intent, task_type,
+  last_active_at, pending_count, completed_count,
+  last_summary, user_id
 );
 
--- 主题演化（topic_based 专属，记录话题漂移）
-CREATE TABLE topic_evolution (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  session_id  TEXT,
-  topic_id    TEXT NOT NULL,
-  intent      TEXT NOT NULL,
-  change_level TEXT NOT NULL,     -- major/minor/patch/active/abandoned/checkpoint
-  state_snapshot TEXT,
-  created_at  INTEGER
+CREATE TABLE room_conversation_log (
+  id, room_id, session_id, turn_index,
+  role, content, turn_type, created_at
 );
 
--- 产出物（关键交付物落盘 + 进度追踪）
-CREATE TABLE outputs (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  session_id  TEXT,
-  intent      TEXT NOT NULL,       -- 哪个节点产出的
-  output_name TEXT,                -- L2-P0-v5.8 等
-  importance  TEXT NOT NULL,       -- critical/high/normal
-  content     TEXT,                -- 产出内容
-  written_at  INTEGER
+CREATE TABLE session_checkpoint (
+  id, room_id, session_id, state, intent, task_type,
+  contract_in, contract_out, snapshot_at
 );
 
--- 对话日志（可审计的完整对话记录）
-CREATE TABLE conversation_log (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  session_id  TEXT,
-  turn_index  INTEGER,
-  role        TEXT,                -- user/assistant/system
-  content     TEXT,
-  turn_type   TEXT,                -- ask/reply/complete/off-task/...
-  created_at  INTEGER
+CREATE TABLE contract_evolution (
+  id, session_id, intent, field_name,
+  old_value, new_value, change_level, change_level_reason, created_at
 );
 
--- 全文搜索（可选，FTS5 加速对话检索）
-CREATE VIRTUAL TABLE conversation_fts USING fts5(
-  session_id, role, content, tokenize='unicode61'
+CREATE TABLE output_registry (
+  id, room_id, output_name, output_type,
+  importance, written_at, content_preview
 );
 ```
-
-| 表 | 用途 |
-|----|------|
-| sessions | 断点续接——记住上次在哪个房间 |
-| outputs | 进度追踪——哪些节点完成了 |
-| topic_evolution | 话题漂移记录 |
-| conversation_log | 完整对话审计 |
-| conversation_fts | 对话全文搜索（可选） |
 
 ## 八、状态转换简图
 
