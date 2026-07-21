@@ -63,7 +63,18 @@ const server = createServer(async (req, res) => {
   res.end('Not found');
 });
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ 端口 ${PORT} 被占用。换端口启动: PORT=3001 node src-v5.8/server.js`);
+    console.error(`   或者先杀掉占用进程: cmd /c "for /f "tokens=5" %a in ('netstat -ano ^| findstr :${PORT}') do taskkill /F /PID %a"`);
+    process.exit(1);
+  }
+  console.error('服务错误:', err);
+});
+
 server.listen(PORT, () => {
   console.log(`\n  MetaAgent v5.8 Web 界面`);
+  console.log(`  浏览器打开: http://localhost:${PORT}\n`);
+});
   console.log(`  http://localhost:${PORT}\n`);
 });
