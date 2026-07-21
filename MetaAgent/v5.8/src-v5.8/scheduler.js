@@ -13,6 +13,7 @@ const M1_PATTERNS = {
   exit:   ['退出'],
   cancel: ['取消'],
   switch: ['切断房间'],
+  room_confirm: ['房间落地'],
 };
 
 export class Scheduler {
@@ -386,6 +387,34 @@ B = 选择第2个项目
         await this._store.updateSessionState(this._sessionId, STATES.ANALYZING);
         this._telemetry.logEvent(trace, 's3_switch', { roomStateIndex: this._sm.intentList });
         return { state: STATES.ANALYZING, turnType: 'reply', content: '房间已切换，请选择新的节点（P0/N1~N15）。' };
+      }
+      case 'room_confirm': {
+        // 环节结束确认——检查所有产出物要求并强制落盘
+        const intent = this._sm.currentIntent;
+        const required = this._outputs.getRequiredOutputs(intent);
+        const existing = await this._store.getOutputs(this._sessionId);
+        const existingIntents = new Set(existing.map(o => o.intent));
+
+        const missing = required.filter(r => !existingIntents.has(r));
+        if (missing.length > 0) {
+          console.log(`[room_confirm] 缺失产出物: ${missing.join(', ')}, 强制标记完成`);
+          for (const m of missing) {
+            await this._store.writeOutput(this._sessionId, m, `L2-${m}-v5.8`, 'high', `[用户确认完成] ${m}`);
+          }
+        }
+
+        // 更新房间完成状态
+        if (this._store.markRoomComplete) this._store.markRoomComplete(intent);
+        // 进度写入 sessionCheckpoints
+        this._store.saveCheckpoint(intent, this._sessionId, STATES.ANALYZING, intent, this._sm.taskType || 'topic_based', { completedAt: Date.now() }, { phase: 'room_confirm' });
+
+        this._sm.transition(STATES.ANALYZING);
+        await this._store.updateSessionState(this._sessionId, STATES.ANALYZING);
+        return {
+          state: STATES.ANALYZING,
+          turnType: 'complete',
+          content: `「${intent}」房间已落地。产出物已保存。${missing.length > 0 ? `系统自动补全了 ${missing.length} 项缺失产出。` : '全部产出已就绪。'}请继续下一步。`
+        };
       }
       default:
         return null;

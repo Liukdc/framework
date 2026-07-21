@@ -36,4 +36,16 @@ export class OutputsManager {
     const e = this._byIntent.get(intent);
     return e ? e.output : `unknown-${intent}`;
   }
+
+  /** 获取当前环节需要的所有产出物 intent 列表（用于房间落地检查） */
+  getRequiredOutputs(intent) {
+    // 返回当前 intent 自己——每个房间至少产出自己的 delivery
+    const e = this._byIntent.get(intent);
+    return e ? [intent] : [];
+  }
+
+  /** 获取所有已注册 intent */
+  allIntents() {
+    return Array.from(this._byIntent.keys());
+  }
 }
