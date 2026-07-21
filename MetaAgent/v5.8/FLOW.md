@@ -65,8 +65,10 @@ API端点：
 
 ```
 用户输入
-├─ Layer 0: M1 元指令 EXACT_MATCH
-│   wake/exit/cancel/switch → 匹配到则执行 → 返回
+├─ Layer 0: M1 元指令 EXACT_MATCH (0次LLM)
+│   wake("元智能体") / exit("退出") / cancel("取消")
+│   switch("切断房间") / room_confirm("房间落地")
+│   → 匹配到则执行 → 返回
 │
 ├─ Layer 1: ANALYZING
 │   强制选择+logprobs，带 off-task relay 上下文
@@ -99,7 +101,40 @@ API端点：
 └─ 更新session → 返回结果
 ```
 
-## 四、房间管理的三种情况
+## 四、M1 元指令集 (5 个口令)
+
+| 口令 | 指令 | 作用 |
+|------|------|------|
+| 元智能体 | wake | 唤醒，进入 LISTENING |
+| 退出 | exit | 退出，CLOSING |
+| 取消 | cancel | 取消当前，回 LISTENING |
+| 切断房间 | switch | 保存状态，进入 ANALYZING 重选房间 |
+| 房间落地 | room_confirm | 双重确认完成当前环节 |
+
+### 「房间落地」双重确认流程
+
+```
+用户说 "房间落地"
+    ↓
+Step 1: 模型自查
+    根据环节宪法逐项检查任务完成度
+    返回 {complete: true/false, issues: [...]}
+    ├─ 有未完成 → ❌ 返回问题，口令失效
+    └─ 全部完成 ↓
+
+Step 2: DET 审查
+    检查产出物数量 + 格式
+    ├─ 不通过 → ❌ 返回问题，口令失效
+    └─ 通过 ↓
+
+✅ 双重确认通过
+  → 补齐缺失产出物
+  → 更新 sessionCheckpoints
+  → 标记房间完成
+  → ANALYZING 等待下一步
+```
+
+## 五、房间管理的三种情况
 
 | 情况 | 触发 | 处理 |
 |------|------|------|
@@ -107,7 +142,7 @@ API端点：
 | 显式切换 | 用户说"切断房间"(M1 switch) | 保存房间状态 → ANALYZING 重选 |
 | off-task 检测 | 模型判定输入不匹配当前任务 | 原房间返回原因 → ANALYZING relay → 重识别 |
 
-## 四、API 端点
+## 六、API 端点
 
 | 端点 | 方法 | 说明 |
 |------|------|------|
@@ -119,7 +154,7 @@ API端点：
 | `/confirm-create` | POST | 二次确认创建新项目 |
 | `/chat` | POST | 一轮对话 |
 
-## 五、节点体系 (16 个设计节点)
+## 七、节点体系 (17 个节点: INIT + P0 + N1~N15)
 
 ```
 P0    认知加载    — 对齐态控概念，确认设计目标
@@ -141,7 +176,7 @@ N15   调参交付    — tunable 锁定 + 最终验证
 N16   打包交付    — npm 包 + fsm.md 可视化
 ```
 
-## 六、交付物流水线
+## 八、交付物流水线
 
 ```
 MetaAgent 设计对话 (P0→N15)
@@ -158,7 +193,7 @@ N16 → n16-package.js
     └── *.tgz              安装包
 ```
 
-## 七、独立工具
+## 九、独立工具
 
 | 工具 | 用法 | 说明 |
 |------|------|------|
@@ -166,7 +201,7 @@ N16 → n16-package.js
 | n16-package | `node n16-package.js --l3 ./l3 --name a --out ./p` | 打包为 npm 包 |
 | generate-l3 | `node generate-l3.js --out ./my-agent` | N12 自动拆包 |
 
-## 八、数据库表 (21张，对齐态控附录v5.8)
+## 十、数据库表 (21张，对齐态控附录v5.8)
 
 | 分组 | 表 | 作用 |
 |------|---|------|
@@ -181,7 +216,7 @@ N16 → n16-package.js
 | P8 项目 | projectRegistry / userLastProject | 多项目隔离+默认项目 |
 | P9 审计 | conversation_log | 全局对话审计 |
 
-## 九、状态转换简图
+## 十一、状态转换简图
 
 ```
 IDLE → LISTENING → ANALYZING
