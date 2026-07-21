@@ -30,7 +30,7 @@ header span{font-size:.75em;color:#888}
 <script>
 let session = null;
 async function init(){
-  const r = await fetch('/start');
+  const r = await fetch('/start', { method: 'POST' });
   if(!r.ok){ document.getElementById('st').textContent='服务未启动'; return; }
   const d = await r.json();
   addMsg('a','',d.message);
