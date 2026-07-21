@@ -154,7 +154,31 @@ Step 2: DET 审查
 | `/confirm-create` | POST | 二次确认创建新项目 |
 | `/chat` | POST | 一轮对话 |
 
-## 七、节点体系 (17 个节点: INIT + P0 + N1~N15)
+## 七、节点体系
+
+```
+—— 意图识别 (ANALYZING) ——
+INTENT_INIT   项目选择    — 轻量模型，选已有项目 or 创建新项目
+INTENT_ROOM   环节选择    — 强制选择+logprobs，路由到 P0~N15 房间
+
+—— 设计节点 (IN_SESSION) ——
+P0    认知加载    — 对齐态控概念，确认设计目标
+N1    场景定义    — 边界清单，意图枚举
+N2    边界测试    — 紧张度测试 + 语料采集
+N3    状态枚举    — 节点定义，执行体分派
+N4    转移图      — transitions.json
+N5    调度器      — DET 复验规则，turnType
+N6    路由表      — routeTable.json
+N7    根宪法      — 根宪法 + 架构机制
+N8    局部宪法    — 环节宪法编写
+N9    验证规则    — @section validation
+N10   tunable     — 可调参数声明
+N11   契约对齐    — 跨节点一致性验证
+N12   L2→L3 拆包 — 生产 L3 JSON 配置
+N13   骨架生成    — skeleton 代码
+N14   审骨架      — 20+1 case + 9+2 机制
+N15   调参交付    — tunable 锁定 + 最终验证
+N16   打包交付    — npm 包 + fsm.md 可视化
 
 ```
 P0    认知加载    — 对齐态控概念，确认设计目标
