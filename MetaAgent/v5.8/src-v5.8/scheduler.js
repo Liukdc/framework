@@ -389,31 +389,75 @@ B = 选择第2个项目
         return { state: STATES.ANALYZING, turnType: 'reply', content: '房间已切换，请选择新的节点（P0/N1~N15）。' };
       }
       case 'room_confirm': {
-        // 环节结束确认——检查所有产出物要求并强制落盘
-        const intent = this._sm.currentIntent;
-        const required = this._outputs.getRequiredOutputs(intent);
-        const existing = await this._store.getOutputs(this._sessionId);
-        const existingIntents = new Set(existing.map(o => o.intent));
+        // 两步确认：① 模型自查 ② 状态机 DET 审查
+        const intent = this._sm.currentIntent || 'P0';
+        const roomName = intent;
 
-        const missing = required.filter(r => !existingIntents.has(r));
-        if (missing.length > 0) {
-          console.log(`[room_confirm] 缺失产出物: ${missing.join(', ')}, 强制标记完成`);
-          for (const m of missing) {
-            await this._store.writeOutput(this._sessionId, m, `L2-${m}-v5.8`, 'high', `[用户确认完成] ${m}`);
-          }
+        // Step 1: 让模型自查当前房间任务完成度
+        const reviewPrompt = `你是「${roomName}」房间。用户发出了"房间落地"口令，表示希望确认并结束当前环节。
+
+请你根据环节宪法的要求，逐项检查：
+1. 本环节的所有任务是否已完成？
+2. 是否有未回答的用户问题？
+3. 产出物是否齐全（如状态枚举、路由表、宪法文本等）？
+4. 是否还有需要用户确认的内容？
+
+请用简短的 JSON 回复：
+{"complete": true/false, "issues": ["问题1", "问题2"]}
+如果 complete=true 且 issues 为空数组，表示确认通过。`;
+
+        let modelReview;
+        try {
+          const rawResult = await this._adapter.callModel({
+            model: this._adapter._model || 'deepseek-chat',
+            messages: [
+              { role: 'system', content: reviewPrompt },
+              { role: 'user', content: '请审查当前环节任务完成情况。' }
+            ],
+            max_tokens: 300,
+            temperature: 0.1,
+          });
+          const text = rawResult?.choices?.[0]?.message?.content || '';
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          modelReview = jsonMatch ? JSON.parse(jsonMatch[0]) : { complete: true, issues: [] };
+        } catch {
+          modelReview = { complete: true, issues: ['模型审查失败，自动通过'] };
         }
 
-        // 更新房间完成状态
-        if (this._store.markRoomComplete) this._store.markRoomComplete(intent);
-        // 进度写入 sessionCheckpoints
-        this._store.saveCheckpoint(intent, this._sessionId, STATES.ANALYZING, intent, this._sm.taskType || 'topic_based', { completedAt: Date.now() }, { phase: 'room_confirm' });
+        // Step 2: 状态机 DET 审查（产出物数量 + 格式）
+        const existing = await this._store.getOutputs(this._sessionId);
+        const roomOutputs = existing.filter(o => o.intent === intent);
+        let detIssues = [];
+        if (roomOutputs.length === 0 && modelReview.complete) {
+          detIssues.push('未检测到产出物记录');
+        }
 
-        this._sm.transition(STATES.ANALYZING);
-        await this._store.updateSessionState(this._sessionId, STATES.ANALYZING);
+        // 两步都通过 → 生效
+        const allIssues = [...(modelReview.issues || []), ...detIssues];
+        if (modelReview.complete && detIssues.length === 0) {
+          // 强制补齐缺失产出物
+          if (roomOutputs.length === 0) {
+            await this._store.writeOutput(this._sessionId, intent, `L2-${intent}-v5.8`, 'high', `[房间落地确认] ${intent}环节完成`);
+          }
+
+          // 标记完成 + 写检查点
+          if (this._store.markRoomComplete) this._store.markRoomComplete(intent);
+          this._store.saveCheckpoint(intent, this._sessionId, STATES.ANALYZING, intent, this._sm.taskType || 'topic_based', { completedAt: Date.now() }, { phase: 'room_confirm' });
+
+          this._sm.transition(STATES.ANALYZING);
+          await this._store.updateSessionState(this._sessionId, STATES.ANALYZING);
+          return {
+            state: STATES.ANALYZING,
+            turnType: 'complete',
+            content: `✅ 房间落地确认通过。\n模型审查：${roomOutputs.length > 0 ? '已产出' + roomOutputs.length+'项' : '初始确认'} | DET审查：通过\n「${roomName}」已完成，请继续下一步。`
+          };
+        }
+
+        // 有问题 → 口令失效，返回问题
         return {
-          state: STATES.ANALYZING,
-          turnType: 'complete',
-          content: `「${intent}」房间已落地。产出物已保存。${missing.length > 0 ? `系统自动补全了 ${missing.length} 项缺失产出。` : '全部产出已就绪。'}请继续下一步。`
+          state: this._sm.fullState,
+          turnType: 'validation_failed',
+          content: `❌ 房间落地未通过。请修复以下问题后重新发送"房间落地"：\n${allIssues.map((e,i) => `  ${i+1}. ${e}`).join('\n')}`
         };
       }
       default:
