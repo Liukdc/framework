@@ -24,14 +24,14 @@ node server.js
    页面 /status → 有key → POST /start
 ```
 
-## 二、项目选择 (DET，不走LLM)
+## 二、项目选择 (轻量 ANALYZING + 二次确认)
 
 ```
 POST /start → initSession()
 
 查 projectRegistry
 ├─ 无项目
-│   → "欢迎！给项目起个名字"
+│   → 直接进入创建流程："给项目起个名字"
 │
 └─ 有项目
     → "已有项目：
@@ -39,15 +39,26 @@ POST /start → initSession()
         2. 提醒助手
        输入编号或项目名选择："
 
-用户输入 → /select-project (DET)
-├─ 输入数字 → 按序号匹配
-├─ 输入名称 → 精确匹配
-└─ 都不匹配 → 当成新项目名
+用户输入 → /select-project → 轻量ANALYZING
+├─ 模型返回 A/B/C → 选择已有项目 → finishInit()
+├─ 模型返回创建 → phase: confirm_create
+│   → "确认创建新项目「xxx」？输入名字确认，或'取消'"
+│
+└─ 模型失败 → DET兜底(数字+模糊匹配)
+
+创建确认 → /confirm-create
+├─ 输入名字 → 创建项目 → finishInit()
+└─ 输入"取消" → 回到项目列表
 
 项目选定 → finishInitSession()
 ├─ L2-L3 校验
 ├─ 断点续接（有历史→续接，无→IDLE）
 └─ createSession
+
+API端点：
+  /start           → 项目列表
+  /select-project   → 轻量ANALYZING选择
+  /confirm-create   → 二次确认创建
 ```
 
 ## 三、每轮对话 (handleTurn)
@@ -87,8 +98,9 @@ POST /start → initSession()
 | `/` | GET | chat.html |
 | `/status` | GET | 检测 API key 状态 |
 | `/set-key` | POST | 输入 API key |
-| `/start` | POST | initSession（含项目选择） |
-| `/select-project` | POST | 选择/创建项目 |
+| `/start` | POST | initSession（返回项目列表） |
+| `/select-project` | POST | 轻量ANALYZING：选择/创建项目 |
+| `/confirm-create` | POST | 二次确认创建新项目 |
 | `/chat` | POST | 一轮对话 |
 
 ## 五、节点体系 (16 个设计节点)
