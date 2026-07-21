@@ -101,7 +101,7 @@ export class DeepSeekAdapter {
     return { letter, probability, raw: choice.message?.content };
   }
 
-  // === IN_SESSION: 通用对话 ===
+  // === IN_SESSION: 流式实时拦截 ===
 
   /** 构造 IN_SESSION prompt */
   buildInSessionPrompt(systemPrompt, messages, tools, modelOverride = null) {
@@ -118,10 +118,68 @@ export class DeepSeekAdapter {
     };
   }
 
-  /** 调用 IN_SESSION */
-  async callInSession(systemPrompt, messages, tools = [], modelOverride = null) {
+  /** 流式调用——isOnTask 实时拦截（第一字即检测） */
+  async callInSession(systemPrompt, messages, tools = [], modelOverride = null, _retry = 0) {
     const params = this.buildInSessionPrompt(systemPrompt, messages, tools, modelOverride);
-    return this._call(params);
+    params.stream = true;
+
+    const url = `${DEEPSEEK_BASE_URL}/chat/completions`;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this._apiKey}` },
+      body: JSON.stringify(params),
+    });
+    if (!resp.ok) { const e = await resp.text(); throw new Error(`DeepSeek ${resp.status}: ${e.slice(0,200)}`); }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buff = '', collected = '', firstChunk = true;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buff += decoder.decode(value, { stream: true });
+      const lines = buff.split('\n'); buff = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
+        try {
+          const j = JSON.parse(line.slice(6));
+          const d = j.choices?.[0]?.delta?.content || '';
+          if (d) collected += d;
+        } catch {}
+      }
+
+      // 拿到第一个非空字符 → 立即判断
+      if (firstChunk && collected.trimStart().length > 0) {
+        firstChunk = false;
+        const clean = collected.replace(/^```json?\s*\n?/, '').trimStart();
+
+        // 第一个字符不是 { → 打断+重试
+        if (!clean.startsWith('{')) {
+          reader.cancel();
+          if (_retry < 1) {
+            console.log('[adapter] isOnTask 首字非{ ，流式打断重试');
+            return this.callInSession(
+              systemPrompt + '\n\n⚠️ 第一个字符必须是{', messages, tools, modelOverride, _retry + 1
+            );
+          }
+          // 重试耗尽 → 假装 isOnTask:true，原样返回
+          return { choices: [{ message: { content: collected, tool_calls: [] } }] };
+        }
+
+        // 等 isOnTask 值出现（{isOnTask: 共10字符，15字符足够解析）
+        if (clean.length > 15) {
+          const mt = clean.match(/^{\s*['"]?isOnTask['"]?\s*:\s*(true|false)/);
+          if (mt && mt[1] === 'false') {
+            reader.cancel();
+            return { choices: [{ message: { content: '{isOnTask:false}', tool_calls: [] } }] };
+          }
+        }
+      }
+    }
+
+    // 正常完成：拼接完整 content
+    return { choices: [{ message: { content: collected, tool_calls: [] } }] };
   }
 
   /** 解析 IN_SESSION 结果 + isOnTask 前置拦截 */
